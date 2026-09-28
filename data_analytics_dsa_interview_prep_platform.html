@@ -1,0 +1,2223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Analytics & DSA Interview Preparation Portal</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- SQLite WebAssembly Engine (sql.js) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+  <!-- Chart.js for Instant Data Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- PapaParse for Client-Side CSV Importing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <!-- Pyodide for Real In-Browser Python & Pandas (Lazy Loaded) -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b'
+            },
+            dark: {
+              800: '#1e293b',
+              850: '#172033',
+              900: '#0f172a',
+              950: '#090d16'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    
+    .heatmap-cell {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+    .sql-table th, .sql-table td {
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      text-align: left;
+    }
+    .sql-table th {
+      background-color: #1e293b;
+      position: sticky;
+      top: 0;
+      color: #94a3b8;
+    }
+    .sql-table tr:nth-child(even) { background-color: #141e33; }
+    .sql-table tr:hover { background-color: #1e293b; }
+  </style>
+</head>
+<body class="bg-dark-900 text-slate-200 min-h-screen flex flex-col font-sans">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-dark-850 border-b border-slate-800 sticky top-0 z-50 px-4 py-2.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg border border-emerald-500/30">
+        <i class="fa-solid fa-database"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-white tracking-wide text-sm sm:text-base flex items-center gap-2">
+          Analytics & DSA Prep Master
+          <span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full font-mono">SQLite + Pyodide WASM</span>
+        </h1>
+        <p class="text-xs text-slate-400">Complete Interview Simulation & Practice Suite</p>
+      </div>
+    </div>
+
+    <!-- Quick Stats & Actions -->
+    <div class="flex items-center space-x-2 text-xs">
+      <div class="hidden lg:flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+        <i class="fa-solid fa-bolt text-amber-400"></i>
+        <span>Engine: <strong class="text-white">SQLite 3 (In-Browser)</strong></span>
+      </div>
+
+      <!-- Import CSV Modal Trigger -->
+      <button onclick="openImportModal()" title="Import external CSV into SQLite" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-file-import text-cyan-400"></i>
+        <span class="hidden sm:inline">Import CSV</span>
+      </button>
+
+      <!-- Download SQLite DB File -->
+      <button onclick="downloadSqliteDb()" title="Export current SQLite database file" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-floppy-disk text-emerald-400"></i>
+        <span class="hidden sm:inline">Export .sqlite</span>
+      </button>
+
+      <!-- Reset Database -->
+      <button onclick="resetDatabase()" title="Reset SQLite database with initial seed tables" class="px-2.5 py-1.5 bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/50 rounded-lg flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-rotate-left"></i>
+        <span>Reset DB</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container with Sidebar Navigation -->
+  <div class="flex-1 flex overflow-hidden">
+    <!-- Sidebar Navigation Menu -->
+    <aside class="w-60 bg-dark-950 border-r border-slate-800 flex flex-col justify-between overflow-y-auto shrink-0">
+      <div class="p-3 space-y-1">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-3 py-1.5">Core Practice</div>
+        <button onclick="switchTab('sql-editor')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition active-tab bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 font-medium">
+          <i class="fa-solid fa-terminal w-5 text-center"></i>
+          <span>SQL Code Editor</span>
+        </button>
+        <button onclick="switchTab('challenges')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-trophy w-5 text-center text-amber-400"></i>
+          <span>SQL Challenges</span>
+        </button>
+        <button onclick="switchTab('python-editor')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-brands fa-python w-5 text-center text-amber-400"></i>
+          <span>Python & Pandas</span>
+        </button>
+        <button onclick="switchTab('tracker')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-chart-line w-5 text-center"></i>
+          <span>Progress & Tracker</span>
+        </button>
+
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-3 py-1.5 pt-4">Analytics Tools</div>
+        <button onclick="switchTab('ab-testing')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-calculator w-5 text-center text-indigo-400"></i>
+          <span>A/B Test Calculator</span>
+        </button>
+        <button onclick="switchTab('dialect-crosswalk')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-language w-5 text-center text-teal-400"></i>
+          <span>Dialect Crosswalk</span>
+        </button>
+
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-3 py-1.5 pt-4">Knowledge & Prep</div>
+        <button onclick="switchTab('prep-material')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-book-open w-5 text-center"></i>
+          <span>Prep Material</span>
+        </button>
+        <button onclick="switchTab('theory')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-graduation-cap w-5 text-center"></i>
+          <span>Theory & DSA</span>
+        </button>
+        <button onclick="switchTab('cheat-sheet')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-file-code w-5 text-center"></i>
+          <span>Cheat Sheet</span>
+        </button>
+        <button onclick="switchTab('flashcards')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-layer-group w-5 text-center"></i>
+          <span>Flashcards</span>
+        </button>
+
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-3 py-1.5 pt-4">Interview Tools</div>
+        <button onclick="switchTab('quiz')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-clipboard-question w-5 text-center"></i>
+          <span>Interactive Quiz</span>
+        </button>
+        <button onclick="switchTab('mock-interview')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-user-tie w-5 text-center"></i>
+          <span>Mock Interview</span>
+        </button>
+        <button onclick="switchTab('jd-analyzer')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-magnifying-glass-chart w-5 text-center"></i>
+          <span>JD Analyzer</span>
+        </button>
+        <button onclick="switchTab('sql-explainer')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-diagram-project w-5 text-center"></i>
+          <span>SQL Explainer</span>
+        </button>
+        <button onclick="switchTab('star-builder')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-star w-5 text-center"></i>
+          <span>STAR Builder</span>
+        </button>
+        <button onclick="switchTab('companies')" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-building w-5 text-center"></i>
+          <span>Companies</span>
+        </button>
+      </div>
+
+      <div class="p-3 border-t border-slate-800/80 text-[11px] text-slate-400">
+        <div class="flex items-center justify-between mb-1">
+          <span>SQLite Engine:</span>
+          <span id="engine-status-badge" class="text-emerald-400 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Active
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span>Pyodide Engine:</span>
+          <span id="pyodide-status-badge" class="text-slate-400 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-slate-500"></span> Ready on Demand
+          </span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Work Area -->
+    <main class="flex-1 flex flex-col overflow-y-auto bg-dark-900">
+
+      <!-- ========================================== -->
+      <!-- TAB 1: SQL CODE EDITOR                     -->
+      <!-- ========================================== -->
+      <section id="tab-sql-editor" class="tab-pane flex-1 flex flex-col p-4 space-y-4">
+        
+        <!-- Top Toolbar Info & Presets -->
+        <div class="bg-dark-850 p-3 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center flex-wrap gap-2">
+            <span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded text-xs border border-slate-700 font-mono">
+              Dialect: <strong class="text-emerald-400">SQLite 3 (WASM)</strong>
+            </span>
+            <select id="sql-query-presets" onchange="loadPresetQuery(this.value)" class="bg-slate-800 text-xs text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500">
+              <option value="">-- Load Interview Query Template --</option>
+              <option value="select_basic">1. Basic SELECT & Aggregations</option>
+              <option value="window_func">2. Window Function (ROW_NUMBER / PARTITION BY)</option>
+              <option value="cte_demo">3. Common Table Expression (CTE)</option>
+              <option value="multi_join">4. JOIN (Orders + Users + Payments)</option>
+              <option value="subquery">5. Subquery with AVG Filter</option>
+              <option value="insert_test">6. INSERT New Record</option>
+              <option value="update_test">7. UPDATE Existing Record</option>
+              <option value="delete_test">8. DELETE Record</option>
+              <option value="ddl_table">9. CREATE TABLE & INSERT (Multi-statement)</option>
+            </select>
+          </div>
+
+          <!-- Utility buttons: Format, Explain, Clear, Run -->
+          <div class="flex items-center flex-wrap gap-2">
+            <button onclick="formatSQL()" title="Reformat and indent SQL query" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 rounded-lg text-xs font-medium transition flex items-center gap-1.5">
+              <i class="fa-solid fa-code"></i> Format SQL
+            </button>
+            <button onclick="explainQueryPlan()" title="Explain SQLite execution plan" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 rounded-lg text-xs font-medium transition flex items-center gap-1.5">
+              <i class="fa-solid fa-route"></i> Explain Plan
+            </button>
+            <button onclick="clearEditor()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs font-medium transition flex items-center gap-1">
+              <i class="fa-solid fa-eraser"></i> Clear
+            </button>
+            <button onclick="runSQL()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-emerald-900/30 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-play"></i> Run SQL
+            </button>
+          </div>
+        </div>
+
+        <!-- Editor & Schema Layout Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1 min-h-[550px]">
+          
+          <!-- Left: Schema Explorer -->
+          <div class="lg:col-span-1 bg-dark-850 rounded-xl border border-slate-800 flex flex-col overflow-hidden">
+            <div class="p-3 bg-dark-950 border-b border-slate-800 flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-sitemap text-emerald-400"></i> Database Schema
+              </span>
+              <button onclick="updateSchemaExplorer()" title="Refresh Schema" class="text-slate-400 hover:text-slate-200 text-xs">
+                <i class="fa-solid fa-arrows-rotate"></i>
+              </button>
+            </div>
+            
+            <div id="schema-tree" class="flex-1 overflow-y-auto p-2 space-y-2 text-xs">
+              <div class="text-slate-400 p-2">Loading tables...</div>
+            </div>
+
+            <div class="p-2.5 bg-dark-950 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+              <span>Click table to expand</span>
+              <button onclick="openImportModal()" class="text-cyan-400 hover:underline">+ New Table</button>
+            </div>
+          </div>
+
+          <!-- Right: Code Editor & Result Output -->
+          <div class="lg:col-span-3 flex flex-col space-y-4">
+            
+            <!-- SQL Input Area -->
+            <div class="flex-1 bg-dark-850 rounded-xl border border-slate-800 flex flex-col overflow-hidden min-h-[200px]">
+              <div class="px-3 py-1.5 bg-dark-950 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <div class="flex items-center gap-2">
+                  <span>SQL Query Input</span>
+                  <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">Multi-statement enabled</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button onclick="copyShareableQueryLink()" title="Copy shareable link with query" class="hover:text-emerald-400 transition text-[11px] flex items-center gap-1">
+                    <i class="fa-solid fa-share-nodes"></i> Share Link
+                  </button>
+                  <span class="font-mono text-[11px]">Ctrl+Enter to Execute</span>
+                </div>
+              </div>
+              <textarea id="sql-code-input" class="w-full flex-1 bg-dark-900 text-slate-100 font-mono text-sm p-3 focus:outline-none resize-none" spellcheck="false" placeholder="-- Write SQL query here or select a preset template
+SELECT * FROM orders LIMIT 10;">SELECT * FROM orders LIMIT 10;</textarea>
+            </div>
+
+            <!-- Execution Status & Meta -->
+            <div id="query-meta-bar" class="hidden px-3 py-2 rounded-lg text-xs flex items-center justify-between border"></div>
+
+            <!-- Query Output Area -->
+            <div class="flex-1 bg-dark-850 rounded-xl border border-slate-800 flex flex-col overflow-hidden min-h-[280px]">
+              <div class="px-3 py-1.5 bg-dark-950 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                
+                <!-- View Tabs: Tabular Data vs Visualization Chart -->
+                <div class="flex items-center gap-1 bg-slate-900 p-0.5 rounded border border-slate-800">
+                  <button id="btn-view-table" onclick="toggleResultView('table')" class="px-2.5 py-1 rounded bg-slate-800 text-white font-medium text-xs">
+                    <i class="fa-solid fa-table mr-1"></i> Table View
+                  </button>
+                  <button id="btn-view-chart" onclick="toggleResultView('chart')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white text-xs">
+                    <i class="fa-solid fa-chart-column mr-1 text-emerald-400"></i> Chart View
+                  </button>
+                </div>
+
+                <!-- Export Controls -->
+                <div class="flex items-center gap-2">
+                  <span id="output-row-stats" class="text-[11px] mr-2"></span>
+                  <button onclick="exportResultCsv()" title="Download result as CSV" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px] border border-slate-700">
+                    <i class="fa-solid fa-file-csv text-emerald-400 mr-1"></i> CSV
+                  </button>
+                  <button onclick="copyResultMarkdown()" title="Copy result as Markdown table" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px] border border-slate-700">
+                    <i class="fa-solid fa-clipboard text-cyan-400 mr-1"></i> Markdown
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tabular Results View Container -->
+              <div id="sql-result-container" class="flex-1 overflow-auto p-3 text-xs font-mono">
+                <div class="text-slate-400 italic">Run a query to view results.</div>
+              </div>
+
+              <!-- Interactive Chart.js View Container -->
+              <div id="sql-chart-container" class="hidden flex-1 flex flex-col p-4 overflow-hidden">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2 text-xs">
+                    <label class="text-slate-400">Chart Type:</label>
+                    <select id="chart-type-selector" onchange="renderActiveChart()" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-white text-xs">
+                      <option value="bar">Bar Chart</option>
+                      <option value="line">Line Chart</option>
+                      <option value="pie">Pie Chart</option>
+                      <option value="doughnut">Doughnut Chart</option>
+                    </select>
+                  </div>
+                  <div id="chart-metrics-info" class="text-xs text-slate-400"></div>
+                </div>
+                <div class="flex-1 relative min-h-[220px]">
+                  <canvas id="sql-chart-canvas"></canvas>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 2: SQL CHALLENGES (LeetCode Style)     -->
+      <!-- ========================================== -->
+      <section id="tab-challenges" class="tab-pane hidden flex-1 p-6 space-y-4 max-w-5xl mx-auto w-full">
+        <div class="bg-dark-850 p-6 rounded-2xl border border-slate-800">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-4">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-trophy text-amber-400"></i> Interview Challenge Grader
+              </h2>
+              <p class="text-xs text-slate-400">Solve real interview SQL questions and automatically verify against reference test fixtures.</p>
+            </div>
+            <select id="challenge-selector" onchange="loadChallenge(this.value)" class="bg-slate-800 text-xs text-slate-200 border border-slate-700 rounded-lg px-3 py-2 font-medium">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="space-y-3">
+              <div class="p-3.5 bg-dark-900 rounded-xl border border-slate-800">
+                <div class="flex items-center justify-between mb-2">
+                  <span id="challenge-difficulty" class="text-[11px] font-bold px-2 py-0.5 rounded uppercase">Medium</span>
+                  <span id="challenge-category" class="text-slate-400 text-xs">Aggregations & Filters</span>
+                </div>
+                <h3 id="challenge-title" class="font-bold text-sm text-white mb-2">Problem Title</h3>
+                <p id="challenge-desc" class="text-xs text-slate-300 leading-relaxed">Problem statement description...</p>
+              </div>
+
+              <div class="p-3 bg-dark-900 rounded-xl border border-slate-800 text-xs">
+                <div class="font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+                  <i class="fa-solid fa-lightbulb text-amber-400"></i> Expected Schema
+                </div>
+                <div id="challenge-schema" class="text-slate-400 font-mono text-[11px]"></div>
+              </div>
+            </div>
+
+            <div class="flex flex-col space-y-3">
+              <div class="flex-1 bg-dark-900 rounded-xl border border-slate-800 flex flex-col overflow-hidden min-h-[220px]">
+                <div class="px-3 py-1.5 bg-dark-950 border-b border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+                  <span>Your Solution Query</span>
+                  <button onclick="document.getElementById('challenge-sql-input').value=''" class="hover:text-slate-200 text-[11px]">Clear</button>
+                </div>
+                <textarea id="challenge-sql-input" class="w-full flex-1 bg-dark-900 text-slate-100 font-mono text-xs p-3 focus:outline-none resize-none" spellcheck="false" placeholder="Write query solution here..."></textarea>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <button onclick="giveChallengeHint()" class="text-xs text-slate-400 hover:text-amber-400 transition flex items-center gap-1">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> View Hint
+                </button>
+                <button onclick="submitChallengeSolution()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-emerald-900/40 flex items-center gap-2 transition">
+                  <i class="fa-solid fa-check-double"></i> Submit Solution
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scorecard Diff Viewer -->
+          <div id="challenge-feedback" class="mt-4 hidden p-4 rounded-xl border text-xs font-mono"></div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 3: REAL PYTHON & PANDAS (Pyodide WASM) -->
+      <!-- ========================================== -->
+      <section id="tab-python-editor" class="tab-pane hidden flex-1 p-6 space-y-4">
+        <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i class="fa-brands fa-python text-amber-400"></i> Python & Pandas In-Browser Sandbox
+                <span class="text-[10px] bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-full font-mono">Pyodide WASM</span>
+              </h2>
+              <p class="text-xs text-slate-400">Full CPython runtime running directly in WebAssembly with pre-loaded Pandas and sample data.</p>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <button onclick="loadPandasPreset()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium border border-slate-700 transition">
+                Load Pandas Example
+              </button>
+              <button onclick="runPyodideCode()" id="btn-run-python" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-amber-900/30 flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-play"></i> Execute Python
+              </button>
+            </div>
+          </div>
+
+          <textarea id="python-code-input" class="w-full h-72 bg-dark-900 text-amber-200 font-mono text-sm p-3 rounded-lg border border-slate-800 focus:outline-none focus:border-amber-500" spellcheck="false"># In-browser Python & Pandas environment
+import pandas as pd
+
+# Load sample dataset into DataFrame
+data = {
+    'order_id': [1001, 1002, 1003, 1004, 1005],
+    'customer_id': [1, 2, 1, 3, 2],
+    'amount': [250.0, 1200.5, 80.0, 5400.0, 320.0],
+    'status': ['completed', 'completed', 'completed', 'completed', 'refunded']
+}
+df = pd.DataFrame(data)
+
+# Compute Customer Aggregations
+summary = df.groupby('customer_id').agg(
+    total_spend=('amount', 'sum'),
+    order_count=('order_id', 'count')
+).reset_index()
+
+summary['rank'] = summary['total_spend'].rank(ascending=False, method='dense')
+print("--- Customer Aggregation Summary ---")
+print(summary)
+</textarea>
+          
+          <div class="mt-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pyodide Terminal Output</h3>
+              <button onclick="document.getElementById('python-output').textContent=''" class="text-slate-400 hover:text-slate-200 text-xs">Clear Terminal</button>
+            </div>
+            <pre id="python-output" class="bg-dark-950 text-emerald-400 font-mono text-xs p-3.5 rounded-lg border border-slate-800 min-h-[120px] max-h-[300px] overflow-auto whitespace-pre-wrap">Click "Execute Python" to initialize Pyodide WASM and run script...</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 4: A/B TESTING & METRIC CALCULATOR    -->
+      <!-- ========================================== -->
+      <section id="tab-ab-testing" class="tab-pane hidden flex-1 p-6 space-y-6 max-w-5xl mx-auto w-full">
+        <div class="bg-dark-850 p-6 rounded-2xl border border-slate-800">
+          <div class="border-b border-slate-800 pb-3 mb-6">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-calculator text-indigo-400"></i> Product Data Analyst A/B Experimentation Suite
+            </h2>
+            <p class="text-xs text-slate-400">Calculate required sample size and statistical significance for Meta, Uber, and Spotify interview case studies.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Tool 1: Sample Size Estimator -->
+            <div class="bg-dark-900 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+              <div>
+                <h3 class="font-bold text-indigo-300 text-sm mb-1 flex items-center gap-1.5">
+                  <i class="fa-solid fa-users-between-lines"></i> 1. Sample Size Calculator
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">Evan's Miller formulation ($\alpha = 0.05, 1-\beta = 0.80$).</p>
+                
+                <div class="space-y-3 text-xs">
+                  <div>
+                    <label class="block text-slate-300 mb-1">Baseline Conversion Rate (%)</label>
+                    <input id="ab-baseline" type="number" step="0.1" value="5.0" class="w-full bg-dark-850 border border-slate-700 rounded px-3 py-1.5 text-white">
+                  </div>
+                  <div>
+                    <label class="block text-slate-300 mb-1">Minimum Detectable Effect / MDE (%) Relative</label>
+                    <input id="ab-mde" type="number" step="0.1" value="10.0" class="w-full bg-dark-850 border border-slate-700 rounded px-3 py-1.5 text-white">
+                  </div>
+                  <div>
+                    <label class="block text-slate-300 mb-1">Estimated Daily Visitors per Variant</label>
+                    <input id="ab-traffic" type="number" value="2500" class="w-full bg-dark-850 border border-slate-700 rounded px-3 py-1.5 text-white">
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-4 border-t border-slate-800">
+                <button onclick="calculateSampleSize()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold transition">
+                  Compute Sample Size & Duration
+                </button>
+                <div id="sample-size-result" class="mt-3 p-3 bg-dark-950 rounded border border-slate-800 text-xs space-y-1 hidden"></div>
+              </div>
+            </div>
+
+            <!-- Tool 2: Two-Proportion Z-Test Significance -->
+            <div class="bg-dark-900 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+              <div>
+                <h3 class="font-bold text-emerald-400 text-sm mb-1 flex items-center gap-1.5">
+                  <i class="fa-solid fa-chart-pie"></i> 2. Statistical Significance (Z-Test)
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">Compute two-tailed p-values and 95% confidence intervals.</p>
+                
+                <div class="grid grid-cols-2 gap-3 text-xs mb-3">
+                  <div>
+                    <span class="font-bold text-slate-300 block mb-1">Control (A)</span>
+                    <label class="text-[11px] text-slate-400">Visitors</label>
+                    <input id="zt-n1" type="number" value="12500" class="w-full bg-dark-850 border border-slate-700 rounded px-2.5 py-1 text-white mb-2">
+                    <label class="text-[11px] text-slate-400">Conversions</label>
+                    <input id="zt-c1" type="number" value="625" class="w-full bg-dark-850 border border-slate-700 rounded px-2.5 py-1 text-white">
+                  </div>
+                  <div>
+                    <span class="font-bold text-emerald-400 block mb-1">Variant (B)</span>
+                    <label class="text-[11px] text-slate-400">Visitors</label>
+                    <input id="zt-n2" type="number" value="12550" class="w-full bg-dark-850 border border-slate-700 rounded px-2.5 py-1 text-white mb-2">
+                    <label class="text-[11px] text-slate-400">Conversions</label>
+                    <input id="zt-c2" type="number" value="718" class="w-full bg-dark-850 border border-slate-700 rounded px-2.5 py-1 text-white">
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-4 border-t border-slate-800">
+                <button onclick="calculateZTest()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition">
+                  Evaluate Experiment Significance
+                </button>
+                <div id="ztest-result" class="mt-3 p-3 bg-dark-950 rounded border border-slate-800 text-xs space-y-1 hidden"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 5: DIALECT CROSSWALK                  -->
+      <!-- ========================================== -->
+      <section id="tab-dialect-crosswalk" class="tab-pane hidden flex-1 p-6 space-y-4 max-w-5xl mx-auto w-full">
+        <div class="bg-dark-850 p-6 rounded-2xl border border-slate-800">
+          <div class="border-b border-slate-800 pb-3 mb-4">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-language text-teal-400"></i> Multi-Dialect SQL Transpilation Crosswalk
+            </h2>
+            <p class="text-xs text-slate-400">Compare how key Data Analytics SQL functions differ between SQLite, PostgreSQL, Snowflake, and BigQuery.</p>
+          </div>
+
+          <div class="overflow-x-auto rounded-lg border border-slate-800">
+            <table class="w-full text-xs font-mono text-left">
+              <thead>
+                <tr class="bg-dark-950 text-slate-300 border-b border-slate-800">
+                  <th class="p-3">Feature</th>
+                  <th class="p-3 text-emerald-400">SQLite (This App)</th>
+                  <th class="p-3 text-blue-400">PostgreSQL</th>
+                  <th class="p-3 text-cyan-400">Snowflake / BigQuery</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800 text-slate-300">
+                <tr>
+                  <td class="p-3 font-sans font-bold text-white">Date Subtraction (7 Days)</td>
+                  <td class="p-3 bg-dark-900">date('now', '-7 days')</td>
+                  <td class="p-3">CURRENT_DATE - INTERVAL '7 days'</td>
+                  <td class="p-3">DATEADD(day, -7, CURRENT_DATE)</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-sans font-bold text-white">String Concatenation</td>
+                  <td class="p-3 bg-dark-900">'A' || ' ' || 'B'</td>
+                  <td class="p-3">'A' || ' ' || 'B' or CONCAT()</td>
+                  <td class="p-3">CONCAT('A', ' ', 'B')</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-sans font-bold text-white">Filter Window Top 1</td>
+                  <td class="p-3 bg-dark-900">WITH cte AS (...) SELECT * WHERE rn=1</td>
+                  <td class="p-3">Subquery / CTE wrapper</td>
+                  <td class="p-3 text-emerald-300 font-bold">QUALIFY ROW_NUMBER() OVER (...) = 1</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-sans font-bold text-white">Group Concatenation</td>
+                  <td class="p-3 bg-dark-900">GROUP_CONCAT(name, ', ')</td>
+                  <td class="p-3">STRING_AGG(name, ', ')</td>
+                  <td class="p-3">LISTAGG(name, ', ')</td>
+                </tr>
+                <tr>
+                  <td class="p-3 font-sans font-bold text-white">Regex Matching</td>
+                  <td class="p-3 bg-dark-900">GLOB or REGEXP</td>
+                  <td class="p-3">col ~ 'pattern'</td>
+                  <td class="p-3">REGEXP_LIKE(col, 'pattern')</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 6: PROGRESS TRACKER & HEATMAP         -->
+      <!-- ========================================== -->
+      <section id="tab-tracker" class="tab-pane hidden flex-1 p-6 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-400">Total Solved</span>
+            <div class="text-2xl font-bold text-emerald-400 mt-1" id="stat-solved">42</div>
+            <div class="text-[11px] text-slate-400 mt-1">+4 this week</div>
+          </div>
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-400">SQL Mastery</span>
+            <div class="text-2xl font-bold text-cyan-400 mt-1">78%</div>
+            <div class="text-[11px] text-slate-400 mt-1">Advanced Window Functions complete</div>
+          </div>
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-400">DSA & Python</span>
+            <div class="text-2xl font-bold text-amber-400 mt-1">64%</div>
+            <div class="text-[11px] text-slate-400 mt-1">Arrays, HashMaps, Strings</div>
+          </div>
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-400">Target Interview Date</span>
+            <div class="text-2xl font-bold text-purple-400 mt-1">30 Days</div>
+            <div class="text-[11px] text-slate-400 mt-1">FAANG / Tier-1 Ready</div>
+          </div>
+        </div>
+
+        <!-- Activity Heatmap -->
+        <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+          <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-fire text-amber-500"></i> Practice Consistency Heatmap
+          </h3>
+          <p class="text-xs text-slate-400 mb-4">Daily query executions and problem submissions logged across 52 weeks.</p>
+          <div class="overflow-x-auto pb-2">
+            <div id="heatmap-grid" class="grid grid-flow-col grid-rows-7 gap-1 w-max"></div>
+          </div>
+        </div>
+
+        <!-- Topic Progress Checklist -->
+        <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+          <h3 class="text-sm font-bold text-white mb-3">Topic Completion Tracker</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <label class="flex items-center space-x-2 p-2 rounded bg-dark-900 border border-slate-800 cursor-pointer">
+              <input type="checkbox" checked class="rounded text-emerald-500">
+              <span>SQL Window Functions (ROW_NUMBER, DENSE_RANK, NTILE)</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2 rounded bg-dark-900 border border-slate-800 cursor-pointer">
+              <input type="checkbox" checked class="rounded text-emerald-500">
+              <span>Self Joins & Anti Joins (NOT EXISTS / LEFT JOIN IS NULL)</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2 rounded bg-dark-900 border border-slate-800 cursor-pointer">
+              <input type="checkbox" checked class="rounded text-emerald-500">
+              <span>Retention & Churn Cohort Analytics</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2 rounded bg-dark-900 border border-slate-800 cursor-pointer">
+              <input type="checkbox" class="rounded text-emerald-500">
+              <span>Recursive CTEs for Hierarchical Data</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2 rounded bg-dark-900 border border-slate-800 cursor-pointer">
+              <input type="checkbox" checked class="rounded text-emerald-500">
+              <span>Data Structures: HashMaps, Frequency Counting</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2 rounded bg-dark-900 border border-slate-800 cursor-pointer">
+              <input type="checkbox" class="rounded text-emerald-500">
+              <span>Two Pointers & Sliding Window Algorithms</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 7: PREP MATERIAL                      -->
+      <!-- ========================================== -->
+      <section id="tab-prep-material" class="tab-pane hidden flex-1 p-6 space-y-4">
+        <h2 class="text-lg font-bold text-white mb-2">High-Yield Data Analyst Interview Topics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <h3 class="font-bold text-emerald-400 text-sm mb-2">1. Running Totals & Moving Averages</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Always use an unbounded preceding window frame for cumulative sums:
+              <br><code class="text-amber-300 bg-dark-950 px-1 py-0.5 rounded">SUM(amount) OVER (PARTITION BY user_id ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)</code>.
+            </p>
+          </div>
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <h3 class="font-bold text-emerald-400 text-sm mb-2">2. Handling Ties with RANK vs DENSE_RANK</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              <strong class="text-white">RANK()</strong> skips rank positions on ties (1, 2, 2, 4), while <strong class="text-white">DENSE_RANK()</strong> keeps rank increments contiguous (1, 2, 2, 3). Essential for "find top N earners without skipping".
+            </p>
+          </div>
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <h3 class="font-bold text-emerald-400 text-sm mb-2">3. Day-over-Day & MoM Growth</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Use <code class="text-amber-300 bg-dark-950 px-1 py-0.5 rounded">LAG(revenue, 1) OVER (ORDER BY month)</code> to retrieve the previous period value, then compute <code class="text-amber-300 bg-dark-950 px-1 py-0.5 rounded">(rev - prev_rev) * 100.0 / prev_rev</code>.
+            </p>
+          </div>
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <h3 class="font-bold text-emerald-400 text-sm mb-2">4. User Retention Rate & Cohorts</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Define the cohort baseline using <code class="text-amber-300 bg-dark-950 px-1 py-0.5 rounded">MIN(activity_date)</code> per user, then perform a self-join on subsequent active dates to calculate Day 1, 7, and 30 retention.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 8: THEORY & DSA                       -->
+      <!-- ========================================== -->
+      <section id="tab-theory" class="tab-pane hidden flex-1 p-6 space-y-4">
+        <h2 class="text-lg font-bold text-white mb-2">Data Analytics DSA Theory Notes</h2>
+        <div class="space-y-4">
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <h3 class="font-bold text-cyan-400 text-sm mb-1">Time & Space Complexities for Analytics</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-2">
+              In interview settings, explain how your database would index queries:
+            </p>
+            <ul class="list-disc list-inside text-xs text-slate-400 space-y-1">
+              <li><strong class="text-slate-200">B-Tree Indexes:</strong> $O(\log N)$ for equality and range filters (`BETWEEN`, `>`, `<`).</li>
+              <li><strong class="text-slate-200">Hash Join vs Merge Join:</strong> Hash join is $O(M + N)$ with $O(M)$ memory; Merge join is ideal when both tables are pre-sorted by join key.</li>
+              <li><strong class="text-slate-200">Window Function Overhead:</strong> Usually requires an internal sort $O(N \log N)$ over the partition & order keys.</li>
+            </ul>
+          </div>
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <h3 class="font-bold text-cyan-400 text-sm mb-1">Data Modeling: Star vs Snowflake Schema</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              <strong class="text-white">Star Schema:</strong> Denormalized dimension tables surrounding a central fact table. Optimized for fast query reads and simpler joins.
+              <br><strong class="text-white">Snowflake Schema:</strong> Normalized dimensions with hierarchy splits. Saves storage and avoids redundancy at the expense of extra joins.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 9: CHEAT SHEET                        -->
+      <!-- ========================================== -->
+      <section id="tab-cheat-sheet" class="tab-pane hidden flex-1 p-6 space-y-4">
+        <h2 class="text-lg font-bold text-white mb-2">SQL & Python Quick Cheat Sheet</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <div class="text-emerald-400 font-bold mb-2 font-sans">Common SQL Window Syntaxes</div>
+            <pre class="bg-dark-950 p-3 rounded text-slate-300 overflow-x-auto">
+-- Running total
+SUM(col) OVER (PARTITION BY group_id ORDER BY date)
+
+-- Relative offsets
+LAG(col, 1) OVER (PARTITION BY id ORDER BY date)
+LEAD(col, 1) OVER (PARTITION BY id ORDER BY date)
+
+-- Deduplicating top row
+WITH ranked AS (
+  SELECT *, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY score DESC) as rn
+  FROM submissions
+)
+SELECT * FROM ranked WHERE rn = 1;</pre>
+          </div>
+
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <div class="text-amber-400 font-bold mb-2 font-sans">Pandas vs SQL Mappings</div>
+            <pre class="bg-dark-950 p-3 rounded text-slate-300 overflow-x-auto">
+-- SQL:
+SELECT dept, AVG(salary) FROM emp GROUP BY dept;
+# Pandas:
+df.groupby('dept')['salary'].mean().reset_index()
+
+-- SQL:
+SELECT * FROM orders WHERE amount > 500;
+# Pandas:
+df[df['amount'] > 500]</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 10: FLASHCARDS                        -->
+      <!-- ========================================== -->
+      <section id="tab-flashcards" class="tab-pane hidden flex-1 p-6 flex flex-col items-center justify-center space-y-4">
+        <div class="w-full max-w-xl text-center">
+          <span class="text-xs text-slate-400">Interview Flashcard (<span id="fc-index">1</span> of 5)</span>
+          <div onclick="flipFlashcard()" id="flashcard-box" class="w-full h-56 mt-3 bg-dark-850 rounded-2xl border border-slate-700 p-6 flex flex-col items-center justify-center cursor-pointer shadow-xl transition-all duration-300 select-none">
+            <span id="fc-tag" class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 mb-3">SQL Concepts</span>
+            <h3 id="fc-content" class="text-base sm:text-lg font-semibold text-white text-center">What is the difference between WHERE and HAVING?</h3>
+            <span class="text-[11px] text-slate-400 mt-4"><i class="fa-solid fa-arrows-rotate mr-1"></i> Click to reveal answer</span>
+          </div>
+          <div class="flex items-center justify-center gap-3 mt-4">
+            <button onclick="prevFlashcard()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg border border-slate-700">Previous</button>
+            <button onclick="nextFlashcard()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold rounded-lg">Next Card</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 11: INTERACTIVE QUIZ                  -->
+      <!-- ========================================== -->
+      <section id="tab-quiz" class="tab-pane hidden flex-1 p-6 space-y-4 max-w-3xl mx-auto w-full">
+        <div class="bg-dark-850 p-6 rounded-2xl border border-slate-800">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <h3 class="font-bold text-white text-sm">Data Interview Timed Quiz</h3>
+            <span class="text-xs text-emerald-400 font-mono">Score: <span id="quiz-score">0</span>/3</span>
+          </div>
+          
+          <div id="quiz-question-box">
+            <p class="text-sm text-slate-200 font-medium mb-4">Q1: Which query produces true distinct customer counts per store?</p>
+            <div class="space-y-2 text-xs">
+              <button onclick="answerQuiz(false, this)" class="quiz-btn w-full text-left p-3 rounded-lg bg-dark-900 border border-slate-700 hover:border-emerald-500 transition">
+                A) SELECT store_id, COUNT(customer_id) FROM orders GROUP BY store_id
+              </button>
+              <button onclick="answerQuiz(true, this)" class="quiz-btn w-full text-left p-3 rounded-lg bg-dark-900 border border-slate-700 hover:border-emerald-500 transition">
+                B) SELECT store_id, COUNT(DISTINCT customer_id) FROM orders GROUP BY store_id
+              </button>
+              <button onclick="answerQuiz(false, this)" class="quiz-btn w-full text-left p-3 rounded-lg bg-dark-900 border border-slate-700 hover:border-emerald-500 transition">
+                C) SELECT DISTINCT store_id, customer_id FROM orders
+              </button>
+            </div>
+            <div id="quiz-feedback" class="mt-4 text-xs hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 12: MOCK INTERVIEW                    -->
+      <!-- ========================================== -->
+      <section id="tab-mock-interview" class="tab-pane hidden flex-1 p-6 space-y-4 max-w-4xl mx-auto w-full">
+        <div class="bg-dark-850 p-6 rounded-2xl border border-slate-800">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+              <i class="fa-solid fa-stopwatch text-rose-400"></i> Live 30-Minute Mock Interview Session
+            </h3>
+            <span class="px-2.5 py-1 bg-rose-950 text-rose-400 border border-rose-800 text-xs font-mono rounded">Time Remaining: 28:45</span>
+          </div>
+          <div class="space-y-4 text-xs">
+            <div class="p-3 bg-dark-900 rounded-lg border border-slate-800">
+              <h4 class="font-bold text-emerald-400 mb-1">Scenario Question:</h4>
+              <p class="text-slate-300">
+                You are a Data Analyst at a subscription streaming service. Management notices that users who signed up in March 2024 are churning faster than previous cohorts. How would you design a SQL query and analytics framework to isolate whether this is due to content catalog changes, app crashes, or pricing adjustments?
+              </p>
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Draft your structured response (Clarification -> Metrics -> SQL / Breakdown):</label>
+              <textarea class="w-full h-40 bg-dark-900 text-slate-100 p-3 rounded-lg border border-slate-800 focus:outline-none focus:border-emerald-500 font-mono" placeholder="1. Clarifying questions...&#10;2. Key metric: Day-30 Retention % by Signup Channel&#10;3. Proposed SQL structure..."></textarea>
+            </div>
+            <button onclick="alert('Response submitted to mock evaluator scorecard!')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold transition">Submit to Rubric</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 13: JD ANALYZER                       -->
+      <!-- ========================================== -->
+      <section id="tab-jd-analyzer" class="tab-pane hidden flex-1 p-6 space-y-4 max-w-4xl mx-auto w-full">
+        <div class="bg-dark-850 p-6 rounded-2xl border border-slate-800">
+          <h3 class="font-bold text-white text-sm mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-file-invoice text-cyan-400"></i> Job Description Skill Extractor
+          </h3>
+          <p class="text-xs text-slate-400 mb-4">Paste any Data Analyst / Analytics Engineer JD to detect required SQL dialects, data stack, and interview topics.</p>
+          <textarea id="jd-input" class="w-full h-32 bg-dark-900 text-slate-200 p-3 rounded-lg border border-slate-800 text-xs focus:outline-none focus:border-cyan-500" placeholder="Paste Job Description text here... (e.g. Seeking Data Analyst with experience in SQL, Window Functions, Python, Tableau, Snowflake, A/B Testing...)"></textarea>
+          <div class="mt-3 flex justify-end">
+            <button onclick="analyzeJD()" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition">Analyze Keywords</button>
+          </div>
+          <div id="jd-tags" class="mt-4 flex flex-wrap gap-2"></div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 14: SQL EXPLAINER                     -->
+      <!-- ========================================== -->
+      <section id="tab-sql-explainer" class="tab-pane hidden flex-1 p-6 space-y-4 max-w-4xl mx-auto w-full">
+        <div class="bg-dark-850 p-6 rounded-2xl border border-slate-800">
+          <h3 class="font-bold text-white text-sm mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-diagram-project text-purple-400"></i> Logical SQL Query Execution Order Explainer
+          </h3>
+          <p class="text-xs text-slate-400 mb-4">Understanding the sequence SQL engines evaluate clauses prevents tricky grouping and alias errors.</p>
+          <div class="space-y-3 text-xs">
+            <div class="p-3 bg-dark-900 rounded-lg border-l-4 border-emerald-500">
+              <strong class="text-emerald-400">1. FROM & JOIN:</strong> Tables are gathered, cross-joined, and joined on conditions.
+            </div>
+            <div class="p-3 bg-dark-900 rounded-lg border-l-4 border-cyan-500">
+              <strong class="text-cyan-400">2. WHERE:</strong> Filters individual candidate rows before grouping occurs.
+            </div>
+            <div class="p-3 bg-dark-900 rounded-lg border-l-4 border-blue-500">
+              <strong class="text-blue-400">3. GROUP BY:</strong> Collapses rows sharing identical group keys into single aggregate records.
+            </div>
+            <div class="p-3 bg-dark-900 rounded-lg border-l-4 border-amber-500">
+              <strong class="text-amber-400">4. HAVING:</strong> Filters aggregated groups using aggregate predicates (`HAVING SUM(amount) > 1000`).
+            </div>
+            <div class="p-3 bg-dark-900 rounded-lg border-l-4 border-purple-500">
+              <strong class="text-purple-400">5. SELECT & Window Functions:</strong> Expressions, aliases, and window frames are evaluated.
+            </div>
+            <div class="p-3 bg-dark-900 rounded-lg border-l-4 border-rose-500">
+              <strong class="text-rose-400">6. DISTINCT, UNION, ORDER BY, LIMIT:</strong> Deduplicated, sorted, and row-sliced.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 15: STAR BUILDER                      -->
+      <!-- ========================================== -->
+      <section id="tab-star-builder" class="tab-pane hidden flex-1 p-6 space-y-4 max-w-4xl mx-auto w-full">
+        <div class="bg-dark-850 p-6 rounded-2xl border border-slate-800">
+          <h3 class="font-bold text-white text-sm mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-star text-amber-400"></i> Behavioral Interview STAR Framework Builder
+          </h3>
+          <p class="text-xs text-slate-400 mb-4">Frame your data projects using the Situation, Task, Action, Result model.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Situation (Context & Company)</label>
+              <textarea id="star-s" class="w-full h-24 bg-dark-900 text-slate-200 p-2.5 rounded border border-slate-800" placeholder="e.g. At XYZ Corp, payment churn spiked by 14% over Q3..."></textarea>
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Task (Your Direct Responsibility)</label>
+              <textarea id="star-t" class="w-full h-24 bg-dark-900 text-slate-200 p-2.5 rounded border border-slate-800" placeholder="e.g. I was tasked with identifying root causes across payment gateways within 5 days..."></textarea>
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Action (What You Executed - SQL, Python, Root Cause)</label>
+              <textarea id="star-a" class="w-full h-24 bg-dark-900 text-slate-200 p-2.5 rounded border border-slate-800" placeholder="e.g. Wrote complex window SQL queries to isolate failure codes by bank API and OS version..."></textarea>
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Result (Quantifiable Business Impact)</label>
+              <textarea id="star-r" class="w-full h-24 bg-dark-900 text-slate-200 p-2.5 rounded border border-slate-800" placeholder="e.g. Discovered an expired OAuth handshake; recovered $140,000 monthly ARR in churn..."></textarea>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button onclick="compileSTARStory()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition">Format & Copy STAR Summary</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 16: COMPANIES                         -->
+      <!-- ========================================== -->
+      <section id="tab-companies" class="tab-pane hidden flex-1 p-6 space-y-4 max-w-4xl mx-auto w-full">
+        <h2 class="text-base font-bold text-white mb-2">Company-Specific Interview Question Bank</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-blue-400 text-sm">Meta (Facebook)</span>
+              <span class="text-[11px] bg-blue-950 text-blue-300 px-2 py-0.5 rounded">Product Analytics</span>
+            </div>
+            <p class="text-slate-300 mb-2">"Find the top 3 active groups each user interacted with in the last 30 days, ranking by total messages sent."</p>
+            <span class="text-slate-400 font-mono text-[11px]">Topics: DENSE_RANK(), Self Joins, Date Filtering</span>
+          </div>
+
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-amber-400 text-sm">Amazon</span>
+              <span class="text-[11px] bg-amber-950 text-amber-300 px-2 py-0.5 rounded">Business Intelligence</span>
+            </div>
+            <p class="text-slate-300 mb-2">"Identify customers whose monthly spending has grown sequentially for three consecutive months."</p>
+            <span class="text-slate-400 font-mono text-[11px]">Topics: LAG(), Window Frames, CTEs</span>
+          </div>
+
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-rose-400 text-sm">Netflix</span>
+              <span class="text-[11px] bg-rose-950 text-rose-300 px-2 py-0.5 rounded">Content Data Science</span>
+            </div>
+            <p class="text-slate-300 mb-2">"Calculate median watch duration per genre without using native MEDIAN function."</p>
+            <span class="text-slate-400 font-mono text-[11px]">Topics: PERCENT_RANK(), Subqueries, Offsets</span>
+          </div>
+
+          <div class="bg-dark-850 p-4 rounded-xl border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-cyan-400 text-sm">Uber</span>
+              <span class="text-[11px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded">Marketplace Operations</span>
+            </div>
+            <p class="text-slate-300 mb-2">"Find surge pricing mismatch where passenger wait times exceeded 10 minutes but driver count was high."</p>
+            <span class="text-slate-400 font-mono text-[11px]">Topics: Multi-table JOIN, CASE WHEN, GROUP BY</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- CSV Import Modal Dialog -->
+  <div id="import-modal" class="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-dark-850 border border-slate-700 rounded-2xl w-full max-w-lg p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-white text-sm flex items-center gap-2">
+          <i class="fa-solid fa-file-import text-cyan-400"></i> Import Dataset into SQLite (Client-Side)
+        </h3>
+        <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-200">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1">Target Table Name</label>
+          <input id="import-table-name" type="text" placeholder="e.g. custom_sales" class="w-full bg-dark-900 border border-slate-700 rounded px-3 py-2 text-white font-mono">
+        </div>
+        
+        <!-- Drag & Drop Zone -->
+        <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-xl p-6 text-center cursor-pointer transition bg-dark-900/50">
+          <i class="fa-solid fa-cloud-arrow-up text-3xl text-cyan-400 mb-2"></i>
+          <p class="text-slate-300 font-medium">Click or Drag & Drop .CSV file here</p>
+          <p class="text-[11px] text-slate-400 mt-1">Parsed client-side via PapaParse (no server upload)</p>
+          <input id="csv-file-input" type="file" accept=".csv" class="hidden">
+        </div>
+        <div id="import-preview" class="text-slate-400 font-mono text-[11px] max-h-24 overflow-y-auto hidden"></div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+        <button onclick="closeImportModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs">Cancel</button>
+        <button onclick="processCsvImport()" id="btn-do-import" disabled class="px-4 py-1.5 bg-cyan-600 disabled:opacity-50 hover:bg-cyan-500 text-white rounded text-xs font-semibold">Create Table & Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client-side Logic: SQLite WASM, Pyodide, Chart.js, Grader & Calculators -->
+  <script>
+    /* =========================================================================
+       1. INITIAL SAMPLE DATASETS
+       ========================================================================= */
+    const initialSeedData = {
+      users: [
+        { user_id: 1, name: "Alice Johnson", email: "alice@example.com", country: "USA", join_date: "2023-01-15" },
+        { user_id: 2, name: "Bob Smith", email: "bob@example.com", country: "UK", join_date: "2023-02-20" },
+        { user_id: 3, name: "Charlie Lee", email: "charlie@example.com", country: "Canada", join_date: "2023-03-10" },
+        { user_id: 4, name: "Diana Prince", email: "diana@example.com", country: "USA", join_date: "2023-04-05" },
+        { user_id: 5, name: "Evan Wright", email: "evan@example.com", country: "Germany", join_date: "2023-05-18" }
+      ],
+      orders: [
+        { order_id: 1001, customer_id: 1, user_id: 1, amount: 250.00, order_date: "2023-06-01", status: "completed" },
+        { order_id: 1002, customer_id: 2, user_id: 2, amount: 1200.50, order_date: "2023-06-02", status: "completed" },
+        { order_id: 1003, customer_id: 1, user_id: 1, amount: 80.00, order_date: "2023-06-05", status: "completed" },
+        { order_id: 1004, customer_id: 3, user_id: 3, amount: 5400.00, order_date: "2023-06-10", status: "completed" },
+        { order_id: 1005, customer_id: 2, user_id: 2, amount: 320.00, order_date: "2023-06-12", status: "refunded" },
+        { order_id: 1006, customer_id: 4, user_id: 4, amount: 1500.00, order_date: "2023-06-15", status: "completed" },
+        { order_id: 1007, customer_id: 1, user_id: 1, amount: 950.00, order_date: "2023-06-20", status: "completed" },
+        { order_id: 1008, customer_id: 5, user_id: 5, amount: 45.00, order_date: "2023-06-22", status: "completed" },
+        { order_id: 1009, customer_id: 3, user_id: 3, amount: 2100.00, order_date: "2023-06-25", status: "completed" }
+      ],
+      payments: [
+        { payment_id: 501, order_id: 1001, payment_method: "Credit Card", amount: 250.00, status: "SUCCESS" },
+        { payment_id: 502, order_id: 1002, payment_method: "PayPal", amount: 1200.50, status: "SUCCESS" },
+        { payment_id: 503, order_id: 1003, payment_method: "Apple Pay", amount: 80.00, status: "SUCCESS" },
+        { payment_id: 504, order_id: 1004, payment_method: "Wire Transfer", amount: 5400.00, status: "SUCCESS" },
+        { payment_id: 505, order_id: 1005, payment_method: "Credit Card", amount: 320.00, status: "REFUNDED" },
+        { payment_id: 506, order_id: 1006, payment_method: "Credit Card", amount: 1500.00, status: "SUCCESS" }
+      ],
+      user_events: [
+        { event_id: 9001, user_id: 1, event_type: "login", event_timestamp: "2023-06-01 09:12:00", device: "mobile" },
+        { event_id: 9002, user_id: 1, event_type: "checkout", event_timestamp: "2023-06-01 09:30:00", device: "mobile" },
+        { event_id: 9003, user_id: 2, event_type: "login", event_timestamp: "2023-06-02 14:05:00", device: "desktop" },
+        { event_id: 9004, user_id: 3, event_type: "view_item", event_timestamp: "2023-06-10 11:20:00", device: "desktop" },
+        { event_id: 9005, user_id: 4, event_type: "login", event_timestamp: "2023-06-15 16:40:00", device: "tablet" }
+      ]
+    };
+
+    /* =========================================================================
+       2. REAL SQLITE WEBASSEMBLY ENGINE INITIALIZATION
+       ========================================================================= */
+    let db = null;
+    let SQL = null;
+    let latestQueryResult = null;
+    let chartInstance = null;
+
+    async function initSQLite() {
+      const badge = document.getElementById('engine-status-badge');
+      try {
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-spin"></span> Loading WASM...';
+        
+        SQL = await initSqlJs({
+          locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+        });
+
+        // Check if serialized database exists in localStorage
+        const savedDb = localStorage.getItem('analytics_sqlite_db');
+        if (savedDb) {
+          try {
+            const u8 = new Uint8Array(JSON.parse(savedDb));
+            db = new SQL.Database(u8);
+            updateSchemaExplorer();
+            showSuccessMeta("Restored persistent SQLite session from local storage.", 0, 0);
+          } catch(e) {
+            resetDatabase();
+          }
+        } else {
+          resetDatabase();
+        }
+
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Active';
+      } catch (err) {
+        console.error("Failed to load SQLite WASM engine:", err);
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span> Failed';
+        showSqlError("Could not initialize SQLite WebAssembly engine. Please verify internet connectivity.");
+      }
+    }
+
+    function persistDatabaseState() {
+      if (!db) return;
+      try {
+        const binary = db.export();
+        // Persist smaller databases directly to localStorage
+        if (binary.length < 4 * 1024 * 1024) {
+          localStorage.setItem('analytics_sqlite_db', JSON.stringify(Array.from(binary)));
+        }
+      } catch (e) {
+        console.warn("Storage quota exceeded or serialization failed:", e);
+      }
+    }
+
+    function resetDatabase() {
+      if (!SQL) return;
+      localStorage.removeItem('analytics_sqlite_db');
+      db = new SQL.Database();
+
+      Object.keys(initialSeedData).forEach(tableName => {
+        const rows = initialSeedData[tableName];
+        if (!rows || rows.length === 0) return;
+
+        const sample = rows[0];
+        const cols = Object.keys(sample);
+
+        const colDefs = cols.map(c => {
+          const val = sample[c];
+          if (typeof val === 'number') {
+            return Number.isInteger(val) ? `"${c}" INTEGER` : `"${c}" REAL`;
+          }
+          return `"${c}" TEXT`;
+        }).join(', ');
+
+        db.run(`DROP TABLE IF EXISTS "${tableName}";`);
+        db.run(`CREATE TABLE "${tableName}" (${colDefs});`);
+
+        const placeholders = cols.map(() => '?').join(', ');
+        const stmt = db.prepare(`INSERT INTO "${tableName}" VALUES (${placeholders});`);
+        rows.forEach(r => {
+          stmt.run(cols.map(c => r[c] !== undefined ? r[c] : null));
+        });
+        stmt.free();
+      });
+
+      updateSchemaExplorer();
+      showSuccessMeta("Database re-initialized to default seed state.", 0, 0);
+      document.getElementById('sql-result-container').innerHTML = `
+        <div class="text-emerald-400 bg-emerald-950/40 p-3 rounded border border-emerald-800">
+          <i class="fa-solid fa-circle-check mr-1.5"></i> SQLite Engine active. Default tables (<code>orders</code>, <code>users</code>, <code>payments</code>, <code>user_events</code>) ready.
+        </div>`;
+    }
+
+    function downloadSqliteDb() {
+      if (!db) return;
+      const binary = db.export();
+      const blob = new Blob([binary], { type: 'application/x-sqlite3' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `interview_prep_${new Date().toISOString().slice(0, 10)}.sqlite`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /* =========================================================================
+       3. SQL EXECUTION ENGINE (Multi-statement, DDL, DML, SELECT)
+       ========================================================================= */
+    function runSQL() {
+      if (!db) {
+        showSqlError("SQLite engine is still loading. Please wait...");
+        return;
+      }
+
+      const input = document.getElementById('sql-code-input').value.trim();
+      if (!input) {
+        showSqlError("Query is empty. Please enter a valid SQL statement.");
+        return;
+      }
+
+      const startTime = performance.now();
+      try {
+        const results = db.exec(input);
+        const executionTime = (performance.now() - startTime).toFixed(2);
+
+        if (!results || results.length === 0) {
+          const affected = db.getRowsModified();
+          showSuccessMeta("Query executed successfully.", affected, executionTime);
+          document.getElementById('sql-result-container').innerHTML = `
+            <div class="text-emerald-300 bg-slate-900/90 p-4 rounded-lg border border-slate-800">
+              <div class="font-bold flex items-center gap-2 mb-1">
+                <i class="fa-solid fa-circle-check text-emerald-400"></i> Query Executed Successfully
+              </div>
+              <div class="text-slate-400">Rows affected: <span class="text-white font-bold">${affected}</span></div>
+              <div class="text-slate-400">Execution time: <span class="text-slate-300">${executionTime} ms</span></div>
+            </div>`;
+          document.getElementById('output-row-stats').textContent = `${affected} rows affected`;
+          latestQueryResult = null;
+        } else {
+          latestQueryResult = results[results.length - 1]; // Store final SELECT set
+          const totalRows = results.reduce((acc, r) => acc + r.values.length, 0);
+          showSuccessMeta("Query executed successfully.", totalRows, executionTime);
+          renderSqlResults(results, executionTime);
+          renderActiveChart();
+        }
+
+        updateSchemaExplorer();
+        persistDatabaseState();
+
+      } catch (err) {
+        showSqlError(err.message);
+      }
+    }
+
+    function renderSqlResults(results, timeMs) {
+      const container = document.getElementById('sql-result-container');
+      let html = '';
+
+      results.forEach((res, i) => {
+        if (results.length > 1) {
+          html += `<div class="text-xs text-amber-400 font-bold mb-2">Result Set #${i + 1} (${res.values.length} rows)</div>`;
+        }
+
+        html += `
+          <div class="overflow-x-auto rounded-lg border border-slate-800 mb-4 max-h-[360px]">
+            <table class="sql-table w-full text-xs font-mono text-left">
+              <thead>
+                <tr>${res.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr>
+              </thead>
+              <tbody>
+                ${res.values.map(row => `
+                  <tr>
+                    ${row.map(val => `
+                      <td>${val !== null ? escapeHtml(String(val)) : '<span class="text-slate-500 italic">NULL</span>'}</td>
+                    `).join('')}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>`;
+      });
+
+      container.innerHTML = html;
+      const totalCount = results[results.length - 1].values.length;
+      document.getElementById('output-row-stats').textContent = `${totalCount} row(s) returned`;
+    }
+
+    function showSqlError(msg) {
+      const meta = document.getElementById('query-meta-bar');
+      meta.className = "px-3 py-2 rounded-lg text-xs flex items-center justify-between border bg-rose-950/50 border-rose-800 text-rose-300";
+      meta.innerHTML = `<span><i class="fa-solid fa-triangle-exclamation mr-1.5 text-rose-400"></i><strong>SQLite Error:</strong> ${escapeHtml(msg)}</span>`;
+      meta.classList.remove('hidden');
+
+      const container = document.getElementById('sql-result-container');
+      container.innerHTML = `
+        <div class="p-3 bg-rose-950/30 rounded border border-rose-900/60 text-rose-300 text-xs font-mono">
+          ${escapeHtml(msg)}
+        </div>`;
+      document.getElementById('output-row-stats').textContent = `0 rows`;
+    }
+
+    function showSuccessMeta(msg, count, timeMs) {
+      const meta = document.getElementById('query-meta-bar');
+      meta.className = "px-3 py-2 rounded-lg text-xs flex items-center justify-between border bg-emerald-950/40 border-emerald-800/80 text-emerald-300";
+      meta.innerHTML = `
+        <span><i class="fa-solid fa-check mr-1.5 text-emerald-400"></i>${msg}</span>
+        <span class="text-slate-400 font-mono text-[11px]">${timeMs} ms</span>`;
+      meta.classList.remove('hidden');
+    }
+
+    function clearEditor() {
+      document.getElementById('sql-code-input').value = '';
+      document.getElementById('sql-result-container').innerHTML = '<div class="text-slate-500 italic">Editor cleared.</div>';
+      document.getElementById('query-meta-bar').classList.add('hidden');
+      document.getElementById('output-row-stats').textContent = '';
+      latestQueryResult = null;
+    }
+
+    /* =========================================================================
+       4. SQL FORMATTER & EXPLAIN QUERY PLAN
+       ========================================================================= */
+    function formatSQL() {
+      const editor = document.getElementById('sql-code-input');
+      let sql = editor.value.trim();
+      if (!sql) return;
+
+      const keywords = [
+        'SELECT', 'FROM', 'WHERE', 'GROUP BY', 'HAVING', 'ORDER BY', 
+        'LIMIT', 'LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN', 'JOIN', 
+        'WITH', 'UNION ALL', 'UNION', 'INSERT INTO', 'VALUES', 
+        'UPDATE', 'SET', 'DELETE FROM', 'CREATE TABLE', 'DROP TABLE'
+      ];
+
+      // Standardize keyword uppercase and newline formatting
+      keywords.forEach(kw => {
+        const regex = new RegExp(`\\b${kw}\\b`, 'gi');
+        sql = sql.replace(regex, `\n${kw}`);
+      });
+
+      // Indent AND / OR clauses
+      sql = sql.replace(/\bAND\b/gi, '\n  AND')
+               .replace(/\bOR\b/gi, '\n  OR')
+               .replace(/\n\s*\n/g, '\n')
+               .trim();
+
+      editor.value = sql;
+    }
+
+    function explainQueryPlan() {
+      if (!db) return;
+      const input = document.getElementById('sql-code-input').value.trim();
+      if (!input) {
+        showSqlError("Please write a SQL query to explain.");
+        return;
+      }
+
+      // Strip trailing semicolons and prefix with EXPLAIN QUERY PLAN
+      const cleanSql = input.replace(/;+\s*$/, '');
+      const explainSql = `EXPLAIN QUERY PLAN ${cleanSql};`;
+
+      try {
+        const res = db.exec(explainSql);
+        if (!res || res.length === 0) {
+          showSqlError("Could not generate explain plan.");
+          return;
+        }
+
+        const plan = res[0];
+        let planHtml = `
+          <div class="p-4 bg-purple-950/30 border border-purple-800 rounded-xl space-y-2">
+            <h4 class="font-bold text-purple-300 text-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-route"></i> SQLite Execution Plan Visualizer
+            </h4>
+            <div class="text-[11px] text-slate-300 font-mono space-y-1">`;
+
+        plan.values.forEach(row => {
+          const detail = row[3];
+          const isScan = detail.includes('SCAN TABLE');
+          const isIndex = detail.includes('USING INDEX') || detail.includes('SEARCH TABLE');
+          const badge = isScan 
+            ? '<span class="px-1.5 py-0.5 rounded bg-rose-900/60 text-rose-300 text-[10px] font-bold">FULL SCAN</span>' 
+            : isIndex 
+            ? '<span class="px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300 text-[10px] font-bold">INDEX SEARCH</span>'
+            : '';
+
+          planHtml += `<div class="p-2 bg-dark-950 rounded flex items-center justify-between">
+            <span>${escapeHtml(detail)}</span>
+            ${badge}
+          </div>`;
+        });
+
+        planHtml += `</div>
+            <p class="text-[11px] text-slate-400 mt-2">
+              <strong>Tip:</strong> Full scans (SCAN TABLE) take $O(N)$ operations. Creating indexes on WHERE/JOIN columns converts scans to logarithmic searches ($O(\\log N)$).
+            </p>
+          </div>`;
+
+        document.getElementById('sql-result-container').innerHTML = planHtml;
+        toggleResultView('table');
+      } catch (err) {
+        showSqlError(`Explain Error: ${err.message}`);
+      }
+    }
+
+    /* =========================================================================
+       5. DATA VISUALIZATION (Chart.js Integration)
+       ========================================================================= */
+    function toggleResultView(mode) {
+      const tableView = document.getElementById('sql-result-container');
+      const chartView = document.getElementById('sql-chart-container');
+      const btnTable = document.getElementById('btn-view-table');
+      const btnChart = document.getElementById('btn-view-chart');
+
+      if (mode === 'chart') {
+        tableView.classList.add('hidden');
+        chartView.classList.remove('hidden');
+        btnTable.className = "px-2.5 py-1 rounded text-slate-400 hover:text-white text-xs";
+        btnChart.className = "px-2.5 py-1 rounded bg-slate-800 text-white font-medium text-xs";
+        renderActiveChart();
+      } else {
+        chartView.classList.add('hidden');
+        tableView.classList.remove('hidden');
+        btnChart.className = "px-2.5 py-1 rounded text-slate-400 hover:text-white text-xs";
+        btnTable.className = "px-2.5 py-1 rounded bg-slate-800 text-white font-medium text-xs";
+      }
+    }
+
+    function renderActiveChart() {
+      if (!latestQueryResult || latestQueryResult.values.length === 0) {
+        document.getElementById('chart-metrics-info').textContent = "No tabular data to visualize.";
+        return;
+      }
+
+      const cols = latestQueryResult.columns;
+      const rows = latestQueryResult.values;
+
+      // Find first label (string) column and first numeric column
+      let labelColIdx = 0;
+      let valColIdx = -1;
+
+      for (let c = 0; c < cols.length; c++) {
+        const val = rows[0][c];
+        if (typeof val === 'number' && valColIdx === -1) {
+          valColIdx = c;
+        } else if (typeof val === 'string' && labelColIdx === 0) {
+          labelColIdx = c;
+        }
+      }
+
+      // Fallback if no numeric column found
+      if (valColIdx === -1) valColIdx = cols.length - 1;
+
+      const labels = rows.map(r => String(r[labelColIdx]));
+      const dataPoints = rows.map(r => Number(r[valColIdx]) || 0);
+      const chartType = document.getElementById('chart-type-selector').value || 'bar';
+
+      document.getElementById('chart-metrics-info').textContent = `X: ${cols[labelColIdx]} | Y: ${cols[valColIdx]}`;
+
+      const ctx = document.getElementById('sql-chart-canvas').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: chartType,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: cols[valColIdx],
+            data: dataPoints,
+            backgroundColor: [
+              'rgba(16, 185, 129, 0.7)',
+              'rgba(6, 182, 212, 0.7)',
+              'rgba(245, 158, 11, 0.7)',
+              'rgba(139, 92, 246, 0.7)',
+              'rgba(244, 63, 94, 0.7)',
+              'rgba(59, 130, 246, 0.7)'
+            ],
+            borderColor: '#10b981',
+            borderWidth: 1.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } }
+          },
+          scales: chartType === 'pie' || chartType === 'doughnut' ? {} : {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+            y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+          }
+        }
+      });
+    }
+
+    /* =========================================================================
+       6. EXPORT / SHARE SUITE (CSV, Markdown, Link)
+       ========================================================================= */
+    function exportResultCsv() {
+      if (!latestQueryResult || latestQueryResult.values.length === 0) {
+        alert("No query results available to export.");
+        return;
+      }
+      const cols = latestQueryResult.columns;
+      const rows = latestQueryResult.values;
+
+      let csv = cols.join(',') + '\n';
+      rows.forEach(r => {
+        csv += r.map(v => `"${String(v !== null ? v : '').replace(/"/g, '""')}"`).join(',') + '\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `query_export_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function copyResultMarkdown() {
+      if (!latestQueryResult || latestQueryResult.values.length === 0) {
+        alert("No query results available to format.");
+        return;
+      }
+      const cols = latestQueryResult.columns;
+      const rows = latestQueryResult.values;
+
+      let md = `| ${cols.join(' | ')} |\n| ${cols.map(() => '---').join(' | ')} |\n`;
+      rows.forEach(r => {
+        md += `| ${r.map(v => (v !== null ? v : 'NULL')).join(' | ')} |\n`;
+      });
+
+      navigator.clipboard.writeText(md).then(() => {
+        alert("Markdown table copied to clipboard!");
+      });
+    }
+
+    function copyShareableQueryLink() {
+      const code = document.getElementById('sql-code-input').value;
+      const encoded = encodeURIComponent(code);
+      const url = `${window.location.origin}${window.location.pathname}#query=${encoded}`;
+      navigator.clipboard.writeText(url).then(() => {
+        alert("Shareable practice link copied to clipboard!");
+      });
+    }
+
+    /* =========================================================================
+       7. CLIENT-SIDE CSV IMPORTER (PapaParse)
+       ========================================================================= */
+    let parsedCsvFile = null;
+
+    function openImportModal() {
+      document.getElementById('import-modal').classList.remove('hidden');
+    }
+
+    function closeImportModal() {
+      document.getElementById('import-modal').classList.add('hidden');
+      parsedCsvFile = null;
+      document.getElementById('csv-file-input').value = '';
+      document.getElementById('import-preview').classList.add('hidden');
+      document.getElementById('btn-do-import').disabled = true;
+    }
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('csv-file-input');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-cyan-400'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-cyan-400'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-cyan-400');
+      if (e.dataTransfer.files.length) handleCsvFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleCsvFile(e.target.files[0]);
+    });
+
+    function handleCsvFile(file) {
+      if (!file.name.endsWith('.csv')) {
+        alert("Please select a valid .csv file.");
+        return;
+      }
+      
+      const suggestedName = file.name.replace(/\.csv$/i, '').replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+      document.getElementById('import-table-name').value = suggestedName;
+
+      Papa.parse(file, {
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          parsedCsvFile = results;
+          const preview = document.getElementById('import-preview');
+          preview.classList.remove('hidden');
+          preview.innerHTML = `Loaded: <strong>${results.data.length}</strong> rows, Columns: <code>${results.meta.fields.join(', ')}</code>`;
+          document.getElementById('btn-do-import').disabled = false;
+        }
+      });
+    }
+
+    function processCsvImport() {
+      if (!parsedCsvFile || !parsedCsvFile.data.length || !db) return;
+      const rawName = document.getElementById('import-table-name').value.trim();
+      const tableName = rawName ? rawName.replace(/[^a-zA-Z0-9_]/g, '_') : 'imported_table';
+
+      const fields = parsedCsvFile.meta.fields;
+      const rows = parsedCsvFile.data;
+      const sample = rows[0];
+
+      // Build DDL with type inferences
+      const colDefs = fields.map(f => {
+        const val = sample[f];
+        if (typeof val === 'number') {
+          return Number.isInteger(val) ? `"${f}" INTEGER` : `"${f}" REAL`;
+        }
+        return `"${f}" TEXT`;
+      }).join(', ');
+
+      try {
+        db.run(`DROP TABLE IF EXISTS "${tableName}";`);
+        db.run(`CREATE TABLE "${tableName}" (${colDefs});`);
+
+        const placeholders = fields.map(() => '?').join(', ');
+        const stmt = db.prepare(`INSERT INTO "${tableName}" VALUES (${placeholders});`);
+        rows.forEach(r => {
+          stmt.run(fields.map(f => r[f] !== undefined ? r[f] : null));
+        });
+        stmt.free();
+
+        updateSchemaExplorer();
+        persistDatabaseState();
+        closeImportModal();
+        alert(`Successfully created table "${tableName}" with ${rows.length} rows!`);
+        executeAndSetSql(`SELECT * FROM "${tableName}" LIMIT 20;`);
+      } catch (err) {
+        alert(`Failed to import CSV into SQLite: ${err.message}`);
+      }
+    }
+
+    /* =========================================================================
+       8. SCHEMA EXPLORER & TABLE ACTIONS
+       ========================================================================= */
+    function updateSchemaExplorer() {
+      const tree = document.getElementById('schema-tree');
+      if (!tree || !db) return;
+
+      try {
+        const res = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;");
+        if (!res || res.length === 0 || res[0].values.length === 0) {
+          tree.innerHTML = '<div class="text-slate-500 italic p-2">No tables found</div>';
+          return;
+        }
+
+        const tableNames = res[0].values.map(v => v[0]);
+        let treeHtml = '';
+
+        tableNames.forEach(tName => {
+          const countRes = db.exec(`SELECT COUNT(*) FROM "${tName}";`);
+          const rowCount = countRes[0].values[0][0];
+
+          const infoRes = db.exec(`PRAGMA table_info("${tName}");`);
+          const cols = infoRes && infoRes.length > 0 ? infoRes[0].values : [];
+
+          treeHtml += `
+            <div class="border border-slate-800 rounded-lg bg-dark-900 overflow-hidden">
+              <div onclick="toggleSchemaTable('${tName}')" class="p-2 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 select-none">
+                <span class="font-bold text-slate-200 flex items-center gap-1.5">
+                  <i class="fa-solid fa-table text-emerald-400"></i> ${tName}
+                </span>
+                <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">${rowCount} rows</span>
+              </div>
+              <div id="table-cols-${tName}" class="hidden p-2 bg-dark-950 border-t border-slate-800 space-y-2">
+                <div class="flex items-center gap-1">
+                  <button onclick="executeAndSetSql('SELECT * FROM ${tName} LIMIT 20;')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-1 rounded">View Data</button>
+                  <button onclick="executeAndSetSql('PRAGMA table_info(${tName});')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-1 rounded">Describe</button>
+                </div>
+                <div class="space-y-1 font-mono text-[11px] text-slate-400">
+                  ${cols.map(c => `
+                    <div class="flex items-center justify-between">
+                      <span class="text-slate-300">${c[1]}</span>
+                      <span class="text-[10px] text-slate-500">${c[2] || 'TEXT'} ${c[5] ? '<span class="text-amber-400 font-bold">PK</span>' : ''}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>`;
+        });
+
+        tree.innerHTML = treeHtml;
+      } catch (e) {
+        console.error("Schema explorer update error:", e);
+      }
+    }
+
+    function toggleSchemaTable(tableName) {
+      const el = document.getElementById(`table-cols-${tableName}`);
+      if (el) el.classList.toggle('hidden');
+    }
+
+    function executeAndSetSql(query) {
+      document.getElementById('sql-code-input').value = query;
+      runSQL();
+    }
+
+    /* =========================================================================
+       9. SQL CHALLENGES & LEETCODE-STYLE GRADER
+       ========================================================================= */
+    const challengeBank = [
+      {
+        id: "c1",
+        title: "High Value Spenders",
+        difficulty: "Easy",
+        category: "Aggregations",
+        desc: "Return the customer_id and total spend for all customers whose total spending exceeds $1,000. Order results by total spend descending.",
+        schema: "orders (order_id, customer_id, amount, status)",
+        hint: "Use GROUP BY customer_id and HAVING SUM(amount) > 1000.",
+        solutionSql: `SELECT customer_id, SUM(amount) AS total_spend FROM orders GROUP BY customer_id HAVING SUM(amount) > 1000 ORDER BY total_spend DESC;`
+      },
+      {
+        id: "c2",
+        title: "Order Rank per Customer",
+        difficulty: "Medium",
+        category: "Window Functions",
+        desc: "Rank each order for each customer from highest amount to lowest amount using ROW_NUMBER(). Include order_id, customer_id, amount, and rn.",
+        schema: "orders (order_id, customer_id, amount)",
+        hint: "Use ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY amount DESC).",
+        solutionSql: `SELECT order_id, customer_id, amount, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY amount DESC) AS rn FROM orders;`
+      },
+      {
+        id: "c3",
+        title: "Multi-order Loyal Customers",
+        difficulty: "Medium",
+        category: "Subqueries / Joins",
+        desc: "Find the name and email of all users who have made 2 or more distinct orders.",
+        schema: "users (user_id, name, email) JOIN orders (order_id, user_id)",
+        hint: "Join users with orders, group by user_id, and filter HAVING COUNT(order_id) >= 2.",
+        solutionSql: `SELECT u.name, u.email FROM users u JOIN orders o ON u.user_id = o.user_id GROUP BY u.user_id, u.name, u.email HAVING COUNT(o.order_id) >= 2;`
+      },
+      {
+        id: "c4",
+        title: "Payment Gateway Failure Analysis",
+        difficulty: "Hard",
+        category: "Case Statements & Ratios",
+        desc: "Calculate the total payments and count of REFUNDED payments per payment_method. Order by payment_method.",
+        schema: "payments (payment_id, payment_method, amount, status)",
+        hint: "Use COUNT(CASE WHEN status = 'REFUNDED' THEN 1 END).",
+        solutionSql: `SELECT payment_method, COUNT(*) AS total_txns, SUM(CASE WHEN status = 'REFUNDED' THEN 1 ELSE 0 END) AS refunded_txns FROM payments GROUP BY payment_method ORDER BY payment_method;`
+      }
+    ];
+
+    function initChallengeDropdown() {
+      const select = document.getElementById('challenge-selector');
+      select.innerHTML = challengeBank.map((c, i) => `<option value="${c.id}">${i + 1}. [${c.difficulty}] ${c.title}</option>`).join('');
+      loadChallenge(challengeBank[0].id);
+    }
+
+    function loadChallenge(id) {
+      const c = challengeBank.find(item => item.id === id);
+      if (!c) return;
+      document.getElementById('challenge-title').textContent = c.title;
+      document.getElementById('challenge-difficulty').textContent = c.difficulty;
+      document.getElementById('challenge-difficulty').className = `text-[11px] font-bold px-2 py-0.5 rounded uppercase ${
+        c.difficulty === 'Easy' ? 'bg-emerald-950 text-emerald-400' : c.difficulty === 'Medium' ? 'bg-amber-950 text-amber-400' : 'bg-rose-950 text-rose-400'
+      }`;
+      document.getElementById('challenge-category').textContent = c.category;
+      document.getElementById('challenge-desc').textContent = c.desc;
+      document.getElementById('challenge-schema').textContent = c.schema;
+      document.getElementById('challenge-sql-input').value = `-- Write solution for: ${c.title}\n`;
+      document.getElementById('challenge-feedback').classList.add('hidden');
+    }
+
+    function giveChallengeHint() {
+      const select = document.getElementById('challenge-selector');
+      const c = challengeBank.find(item => item.id === select.value);
+      if (c) alert(`HINT:\n${c.hint}`);
+    }
+
+    function submitChallengeSolution() {
+      if (!db) return;
+      const select = document.getElementById('challenge-selector');
+      const c = challengeBank.find(item => item.id === select.value);
+      const userSql = document.getElementById('challenge-sql-input').value.trim();
+      const feedback = document.getElementById('challenge-feedback');
+      feedback.classList.remove('hidden');
+
+      try {
+        const expectedRes = db.exec(c.solutionSql)[0];
+        const userRes = db.exec(userSql)[0];
+
+        if (!userRes) {
+          feedback.className = "mt-4 p-4 rounded-xl border border-rose-800 bg-rose-950/40 text-rose-300 text-xs font-mono";
+          feedback.innerHTML = `<strong>Status:</strong> WRONG ANSWER<br>Query returned 0 rows or executed non-SELECT statement.`;
+          return;
+        }
+
+        // Compare dimensions & values
+        const expectedRows = JSON.stringify(expectedRes.values);
+        const userRows = JSON.stringify(userRes.values);
+
+        if (expectedRows === userRows) {
+          feedback.className = "mt-4 p-4 rounded-xl border border-emerald-800 bg-emerald-950/40 text-emerald-300 text-xs font-mono";
+          feedback.innerHTML = `
+            <div class="flex items-center gap-2 font-bold text-sm text-emerald-400 mb-2">
+              <i class="fa-solid fa-circle-check"></i> ACCEPTED!
+            </div>
+            <div>All test fixtures passed. Row count (${userRes.values.length}) matches expected reference output.</div>`;
+        } else {
+          feedback.className = "mt-4 p-4 rounded-xl border border-amber-800 bg-amber-950/40 text-amber-300 text-xs font-mono";
+          feedback.innerHTML = `
+            <div class="flex items-center gap-2 font-bold text-sm text-amber-400 mb-2">
+              <i class="fa-solid fa-circle-xmark"></i> WRONG ANSWER (Result Set Mismatch)
+            </div>
+            <div>Expected ${expectedRes.values.length} row(s), got ${userRes.values.length} row(s).</div>
+            <div class="mt-2 text-slate-400">Your first row: ${JSON.stringify(userRes.values[0] || [])}</div>
+            <div class="text-slate-400">Expected first row: ${JSON.stringify(expectedRes.values[0] || [])}</div>`;
+        }
+      } catch (err) {
+        feedback.className = "mt-4 p-4 rounded-xl border border-rose-800 bg-rose-950/40 text-rose-300 text-xs font-mono";
+        feedback.innerHTML = `<strong>Execution Error:</strong> ${escapeHtml(err.message)}`;
+      }
+    }
+
+    /* =========================================================================
+       10. REAL PYTHON & PANDAS (Pyodide WASM Runtime)
+       ========================================================================= */
+    let pyodideInstance = null;
+    let isPyodideLoading = false;
+
+    async function loadPyodideEngine() {
+      if (pyodideInstance || isPyodideLoading) return;
+      isPyodideLoading = true;
+      const badge = document.getElementById('pyodide-status-badge');
+      const out = document.getElementById('python-output');
+      
+      try {
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-spin"></span> Loading Pyodide & Pandas...';
+        out.textContent = "Loading WebAssembly Python interpreter & Pandas package...";
+        
+        pyodideInstance = await loadPyodide();
+        await pyodideInstance.loadPackage(['pandas', 'numpy']);
+        
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Active';
+        out.textContent = "Python 3.11 with Pandas & NumPy ready. Click 'Execute Python' to run your code.";
+      } catch (e) {
+        console.error("Pyodide loading error:", e);
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span> Load Failed';
+        out.textContent = `Error loading Pyodide: ${e.message}`;
+      } finally {
+        isPyodideLoading = false;
+      }
+    }
+
+    async function runPyodideCode() {
+      const out = document.getElementById('python-output');
+      if (!pyodideInstance) {
+        await loadPyodideEngine();
+        if (!pyodideInstance) return;
+      }
+
+      const code = document.getElementById('python-code-input').value;
+      out.textContent = "Executing Python code...\n";
+
+      try {
+        // Redirect stdout
+        pyodideInstance.setStdout({
+          batched: (text) => {
+            out.textContent += text + "\n";
+          }
+        });
+
+        await pyodideInstance.runPythonAsync(code);
+        out.textContent += "\n>>> Process finished with exit code 0";
+      } catch (err) {
+        out.textContent += `\nPython Error:\n${err.message}`;
+      }
+    }
+
+    function loadPandasPreset() {
+      document.getElementById('python-code-input').value = `# Dual Practice: Moving Average & Group Aggregation in Pandas
+import pandas as pd
+import numpy as np
+
+# Create synthetic store revenue timeline
+dates = pd.date_range('2024-01-01', periods=8, freq='D')
+df = pd.DataFrame({
+    'date': dates,
+    'store': ['West', 'East', 'West', 'West', 'East', 'East', 'West', 'East'],
+    'revenue': [450, 890, 520, 610, 940, 780, 530, 880]
+})
+
+# 3-Day Rolling Moving Average per Store
+df['rolling_3d_avg'] = df.groupby('store')['revenue'].transform(
+    lambda x: x.rolling(3, min_periods=1).mean()
+)
+
+print("--- Pandas 3-Day Rolling Revenue per Store ---")
+print(df)`;
+    }
+
+    /* =========================================================================
+       11. A/B TESTING & STATISTICAL CALCULATOR
+       ========================================================================= */
+    function calculateSampleSize() {
+      const p = parseFloat(document.getElementById('ab-baseline').value) / 100.0;
+      const mde = parseFloat(document.getElementById('ab-mde').value) / 100.0;
+      const dailyTraffic = parseFloat(document.getElementById('ab-traffic').value);
+      const resBox = document.getElementById('sample-size-result');
+      resBox.classList.remove('hidden');
+
+      if (!p || !mde || !dailyTraffic) {
+        resBox.innerHTML = '<span class="text-rose-400">Please enter valid positive numbers.</span>';
+        return;
+      }
+
+      // Evan's Miller sample size formula: 16 * p * (1 - p) / (p * mde)^2
+      const p2 = p * (1 + mde);
+      const delta = Math.abs(p2 - p);
+      const variance = p * (1 - p) + p2 * (1 - p2);
+      const sampleSizePerVariant = Math.ceil((15.7 * variance) / (delta * delta));
+      const totalSampleSize = sampleSizePerVariant * 2;
+      const daysRequired = Math.ceil(sampleSizePerVariant / dailyTraffic);
+
+      resBox.innerHTML = `
+        <div class="text-white font-bold mb-1">Calculation Output:</div>
+        <div>Required Sample Size per Variant: <strong class="text-indigo-300">${sampleSizePerVariant.toLocaleString()}</strong></div>
+        <div>Total Experiment Sample Size (A + B): <strong class="text-slate-200">${totalSampleSize.toLocaleString()}</strong></div>
+        <div>Recommended Experiment Duration: <strong class="text-emerald-400">${daysRequired} day(s)</strong> (${Math.ceil(daysRequired / 7)} weeks)</div>
+        <div class="text-[11px] text-slate-400 mt-1">Rule of Thumb: Always run tests for at least 2 full weekly business cycles to account for day-of-week seasonality.</div>`;
+    }
+
+    function calculateZTest() {
+      const n1 = parseFloat(document.getElementById('zt-n1').value);
+      const c1 = parseFloat(document.getElementById('zt-c1').value);
+      const n2 = parseFloat(document.getElementById('zt-n2').value);
+      const c2 = parseFloat(document.getElementById('zt-c2').value);
+      const resBox = document.getElementById('ztest-result');
+      resBox.classList.remove('hidden');
+
+      if (!n1 || !n2 || c1 < 0 || c2 < 0) {
+        resBox.innerHTML = '<span class="text-rose-400">Please enter valid visitor and conversion figures.</span>';
+        return;
+      }
+
+      const p1 = c1 / n1;
+      const p2 = c2 / n2;
+      const pPool = (c1 + c2) / (n1 + n2);
+      const se = Math.sqrt(pPool * (1 - pPool) * (1 / n1 + 1 / n2));
+      const z = (p2 - p1) / se;
+
+      // Two-tailed p-value approximation via Error Function
+      const pValue = 2 * (1 - normalCdf(Math.abs(z)));
+      const relativeUplift = ((p2 - p1) / p1) * 100.0;
+      const isSignificant = pValue < 0.05;
+
+      resBox.innerHTML = `
+        <div class="text-white font-bold mb-1 flex items-center gap-1.5">
+          ${isSignificant 
+            ? '<i class="fa-solid fa-circle-check text-emerald-400"></i> <span class="text-emerald-300">Statistically Significant (p < 0.05)</span>' 
+            : '<i class="fa-solid fa-circle-xmark text-amber-400"></i> <span class="text-amber-300">Not Statistically Significant</span>'}
+        </div>
+        <div>Control Conv Rate: <strong class="text-slate-300">${(p1 * 100).toFixed(2)}%</strong> | Variant: <strong class="text-slate-300">${(p2 * 100).toFixed(2)}%</strong></div>
+        <div>Relative Uplift: <strong class="${relativeUplift >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${relativeUplift >= 0 ? '+' : ''}${relativeUplift.toFixed(2)}%</strong></div>
+        <div>Z-Score: <strong class="text-slate-200">${z.toFixed(3)}</strong> | P-Value: <strong class="text-slate-200">${pValue.toFixed(4)}</strong></div>
+        <div class="text-[11px] text-slate-400 mt-1">Confidence Level: ${( (1 - pValue) * 100 ).toFixed(2)}% (Alpha threshold: 5.0%)</div>`;
+    }
+
+    function normalCdf(x) {
+      const a1 =  0.254829592, a2 = -0.284496736, a3 =  1.421413741;
+      const a4 = -1.453152027, a5 =  1.061405429, p  =  0.3275911;
+      const sign = x < 0 ? -1 : 1;
+      x = Math.abs(x) / Math.sqrt(2.0);
+      const t = 1.0 / (1.0 + p * x);
+      const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+      return 0.5 * (1.0 + sign * y);
+    }
+
+    /* =========================================================================
+       12. QUERY PRESETS & NAVIGATION
+       ========================================================================= */
+    const queryPresets = {
+      select_basic: `-- 1. Basic Query & Aggregations
+SELECT 
+    customer_id, 
+    COUNT(order_id) AS total_orders, 
+    SUM(amount) AS total_spent, 
+    ROUND(AVG(amount), 2) AS avg_order_val
+FROM orders
+GROUP BY customer_id
+ORDER BY total_spent DESC;`,
+
+      window_func: `-- 2. Window Function (ROW_NUMBER over Partition)
+SELECT
+    order_id,
+    customer_id,
+    amount,
+    order_date,
+    ROW_NUMBER() OVER (
+        PARTITION BY customer_id
+        ORDER BY amount DESC
+    ) AS rank_in_customer,
+    SUM(amount) OVER (
+        PARTITION BY customer_id
+    ) AS customer_cumulative_spend
+FROM orders;`,
+
+      cte_demo: `-- 3. Common Table Expression (CTE)
+WITH customer_summary AS (
+    SELECT 
+        customer_id,
+        SUM(amount) AS total_spent,
+        COUNT(order_id) AS order_cnt
+    FROM orders
+    GROUP BY customer_id
+)
+SELECT *
+FROM customer_summary
+WHERE total_spent > 1000
+ORDER BY total_spent DESC;`,
+
+      multi_join: `-- 4. Multiple JOIN syntax
+SELECT 
+    o.order_id,
+    u.name AS customer_name,
+    u.country,
+    o.amount,
+    p.payment_method,
+    p.status AS payment_status
+FROM orders o
+JOIN users u ON o.user_id = u.user_id
+LEFT JOIN payments p ON o.order_id = p.order_id
+ORDER BY o.amount DESC;`,
+
+      subquery: `-- 5. Subquery in WHERE clause
+SELECT *
+FROM orders
+WHERE amount > (
+    SELECT AVG(amount)
+    FROM orders
+)
+ORDER BY amount DESC;`,
+
+      insert_test: `-- 6. INSERT new row
+INSERT INTO orders (order_id, customer_id, user_id, amount, order_date, status)
+VALUES (99999, 1, 1, 5000.00, '2023-07-01', 'completed');
+
+-- Verify inserted row:
+SELECT * FROM orders WHERE order_id = 99999;`,
+
+      update_test: `-- 7. UPDATE existing row
+UPDATE orders
+SET amount = 7500.00
+WHERE order_id = 99999;
+
+-- Verify update:
+SELECT * FROM orders WHERE order_id = 99999;`,
+
+      delete_test: `-- 8. DELETE row
+DELETE FROM orders
+WHERE order_id = 99999;
+
+-- Verify deletion:
+SELECT * FROM orders WHERE order_id = 99999;`,
+
+      ddl_table: `-- 9. Multi-statement DDL & DML
+CREATE TABLE practice (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    score INTEGER
+);
+
+INSERT INTO practice VALUES (1, 'Sarat', 95);
+INSERT INTO practice VALUES (2, 'Elena', 98);
+INSERT INTO practice VALUES (3, 'Marcus', 89);
+
+SELECT * FROM practice ORDER BY score DESC;`
+    };
+
+    function loadPresetQuery(key) {
+      if (!key || !queryPresets[key]) return;
+      document.getElementById('sql-code-input').value = queryPresets[key];
+      runSQL();
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      const activePane = document.getElementById(`tab-${tabId}`);
+      if (activePane) activePane.classList.remove('hidden');
+
+      document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.classList.remove('active-tab', 'bg-emerald-600/20', 'text-emerald-400', 'border', 'border-emerald-500/30', 'font-medium');
+        btn.classList.add('text-slate-400');
+      });
+
+      const currentBtn = event?.currentTarget;
+      if (currentBtn) {
+        currentBtn.classList.add('active-tab', 'bg-emerald-600/20', 'text-emerald-400', 'border', 'border-emerald-500/30', 'font-medium');
+        currentBtn.classList.remove('text-slate-400');
+      }
+
+      // If switching to Python, prompt or pre-load Pyodide
+      if (tabId === 'python-editor' && !pyodideInstance && !isPyodideLoading) {
+        loadPyodideEngine();
+      }
+    }
+
+    /* =========================================================================
+       13. ACTIVITY HEATMAP GENERATOR
+       ========================================================================= */
+    function generateHeatmap() {
+      const grid = document.getElementById('heatmap-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      const colors = ['bg-slate-800', 'bg-emerald-950', 'bg-emerald-800', 'bg-emerald-600', 'bg-emerald-400'];
+      
+      for (let i = 0; i < 364; i++) {
+        const cell = document.createElement('div');
+        const rand = Math.random();
+        let color = colors[0];
+        if (rand > 0.85) color = colors[4];
+        else if (rand > 0.70) color = colors[3];
+        else if (rand > 0.55) color = colors[2];
+        else if (rand > 0.40) color = colors[1];
+
+        cell.className = `heatmap-cell ${color}`;
+        cell.title = `Day ${i + 1}: Activity logged`;
+        grid.appendChild(cell);
+      }
+    }
+
+    /* =========================================================================
+       14. FLASHCARDS COMPONENT
+       ========================================================================= */
+    const flashcardsData = [
+      { q: "What is the difference between WHERE and HAVING?", a: "WHERE filters rows before aggregation; HAVING filters groups after aggregation.", tag: "SQL Query Order" },
+      { q: "What does RANK() do differently than DENSE_RANK()?", a: "RANK() leaves gaps when duplicate values occur (e.g., 1, 2, 2, 4); DENSE_RANK() does not leave gaps (e.g., 1, 2, 2, 3).", tag: "Window Functions" },
+      { q: "When should you use COALESCE instead of IFNULL?", a: "COALESCE is standard ANSI SQL and accepts multiple fallbacks: COALESCE(val1, val2, val3, default).", tag: "ANSI Standard" },
+      { q: "What is an anti-join?", a: "A join that returns rows from the first table where no match exists in the second table (e.g. LEFT JOIN ... WHERE right.id IS NULL or NOT EXISTS).", tag: "SQL Patterns" },
+      { q: "How do you calculate retention rate?", a: "Active users in current period who were active in base period divided by total cohort users in base period.", tag: "Product Metrics" }
+    ];
+    let currentFcIndex = 0;
+    let isFlipped = false;
+
+    function renderFlashcard() {
+      const item = flashcardsData[currentFcIndex];
+      document.getElementById('fc-index').textContent = currentFcIndex + 1;
+      document.getElementById('fc-tag').textContent = item.tag;
+      document.getElementById('fc-content').textContent = isFlipped ? item.a : item.q;
+    }
+
+    function flipFlashcard() {
+      isFlipped = !isFlipped;
+      renderFlashcard();
+    }
+
+    function nextFlashcard() {
+      isFlipped = false;
+      currentFcIndex = (currentFcIndex + 1) % flashcardsData.length;
+      renderFlashcard();
+    }
+
+    function prevFlashcard() {
+      isFlipped = false;
+      currentFcIndex = (currentFcIndex - 1 + flashcardsData.length) % flashcardsData.length;
+      renderFlashcard();
+    }
+
+    /* =========================================================================
+       15. QUIZ & UTILITIES
+       ========================================================================= */
+    function answerQuiz(isCorrect, btn) {
+      const feedback = document.getElementById('quiz-feedback');
+      feedback.classList.remove('hidden');
+      if (isCorrect) {
+        btn.classList.add('bg-emerald-950', 'border-emerald-500', 'text-emerald-300');
+        feedback.innerHTML = '<span class="text-emerald-400 font-bold"><i class="fa-solid fa-check"></i> Correct!</span> COUNT(DISTINCT customer_id) eliminates duplicate orders by the same customer within each store.';
+        document.getElementById('quiz-score').textContent = '1';
+      } else {
+        btn.classList.add('bg-rose-950', 'border-rose-500', 'text-rose-300');
+        feedback.innerHTML = '<span class="text-rose-400 font-bold"><i class="fa-solid fa-xmark"></i> Incorrect.</span> Standard COUNT(customer_id) counts total rows, which duplicates customers with multiple orders.';
+      }
+    }
+
+    function analyzeJD() {
+      const text = document.getElementById('jd-input').value.toLowerCase();
+      const tagsContainer = document.getElementById('jd-tags');
+      const keywords = ["sql", "window functions", "python", "pandas", "snowflake", "tableau", "a/b testing", "retention", "etl", "dbt", "statistics", "churn", "git"];
+      
+      const found = keywords.filter(k => text.includes(k));
+      if (found.length === 0) {
+        tagsContainer.innerHTML = '<span class="text-xs text-slate-500">No common analytics keywords found. Try pasting a full job description.</span>';
+        return;
+      }
+      tagsContainer.innerHTML = found.map(k => `
+        <span class="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-800 rounded-full text-xs font-mono">
+          ✓ ${k.toUpperCase()}
+        </span>
+      `).join('');
+    }
+
+    function compileSTARStory() {
+      const s = document.getElementById('star-s').value;
+      const t = document.getElementById('star-t').value;
+      const a = document.getElementById('star-a').value;
+      const r = document.getElementById('star-r').value;
+
+      const full = `[STAR Behavioral Response]\nSituation: ${s}\nTask: ${t}\nAction: ${a}\nResult: ${r}`;
+      navigator.clipboard.writeText(full).then(() => {
+        alert("STAR story compiled and copied to clipboard!");
+      }).catch(() => {
+        alert("Story formatted! Ready for your interview.");
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    /* Check URL hash for shared queries */
+    function checkUrlHash() {
+      if (window.location.hash.startsWith('#query=')) {
+        const query = decodeURIComponent(window.location.hash.replace('#query=', ''));
+        document.getElementById('sql-code-input').value = query;
+      }
+    }
+
+    /* Keyboard Shortcut: Ctrl/Cmd + Enter to run SQL */
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        const activeTab = document.getElementById('tab-sql-editor');
+        if (!activeTab.classList.contains('hidden')) {
+          e.preventDefault();
+          runSQL();
+        }
+      }
+    });
+
+    /* App Bootstrap */
+    document.addEventListener('DOMContentLoaded', () => {
+      initSQLite();
+      generateHeatmap();
+      renderFlashcard();
+      initChallengeDropdown();
+      checkUrlHash();
+    });
+  </script>
+</body>
+</html>
