@@ -8,6 +8,14 @@ An implementation of Sarat Akella's six-module store operations plan, designed a
 
 ## Connected UI
 
+### Admin and Store workspaces
+
+The UI now includes Admin store/product configuration, demo user assignments, Store demand planning, a Draft → Submitted → Approved → Published cycle, activity history, and built-in estate/store dashboards. Use the top-bar **Demo profile** selector to switch workspaces. Read [the multi-store walkthrough](MULTI_STORE.md) for the full flow and production boundaries.
+
+Published schedules now gate the UI's illustrative pay: before publication, otherwise-valid timecards are blocked with `schedule_not_published`. A configuration/forecast edit invalidates the affected plan's approval. Raw Python output files remain the original independent fixture outputs and have no approval lifecycle.
+
+This remains a public, browser-local prototype. Demo roles are not authentication; stores do not share these edits across devices. Admin workspace export/import backs up rules, plans and assignments. A secure shared backend is still required for real store users.
+
 The buildless UI under `ui/` runs on GitHub Pages. It reads `ui/data.js`, a published snapshot generated from the pipeline's outputs and input contracts. All six modules share store keys; volume and purchasing share product keys; shifts, timecards and pay share employee/date keys. Module pages link upstream and downstream, the data explorer, Python source and feature tracker.
 
 The simulator recomputes seven-day planning in the browser using `ui/core.mjs`. Demand uplift drives labor and purchasing; labor drives draft shifts; the draft is revalidated against fixed independent demo punches; only eligible timecards enter illustrative pay. Historical holdout scores are never rewritten by a planning scenario. Restoring the snapshot discards the temporary scenario. Simulations do not approve shifts, place orders, submit pay or change cloud data.

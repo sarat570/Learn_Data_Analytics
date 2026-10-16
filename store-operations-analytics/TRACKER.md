@@ -4,6 +4,8 @@ Use the [GitHub checklist issue](https://github.com/sarat570/Learn_Data_Analytic
 
 Open the [connected UI](https://sarat570.github.io/Learn_Data_Analytics/store-operations-analytics/ui/) to inspect modules, simulate planning changes and keep personal feature statuses/notes. Browser progress is local, with export/import; the GitHub issue is updated manually.
 
+The [Admin and Store walkthrough](MULTI_STORE.md) covers store policies, demo user assignments, store planning, Admin review, publication, activity and built-in dashboards. This local demo cycle is implemented; secure authentication, shared store records and production approval history remain pending.
+
 | Stage | Status | Evidence or next action |
 |---|---|---|
 | Local six-module pipeline | Complete | `pipeline.py`, synthetic fixtures and generated outputs |
