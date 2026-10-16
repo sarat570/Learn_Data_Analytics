@@ -1,0 +1,4 @@
+StoreID,Store,UnitsPerHour,FixedHours,MinStaff,OpenHours,HourlyRate
+1,Pune,30,4,2,8,180
+2,Hyderabad,30,4,2,8,180
+3,Bengaluru,30,4,2,8,180

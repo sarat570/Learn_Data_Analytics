@@ -1,0 +1,4 @@
+ProductID,Product,Price,Cost,SupplierID,LeadDays,MOQ,PackSize
+1,Rice 1kg,80,55,S1,2,24,12
+2,Tea 250g,140,90,S2,3,20,10
+3,Lentils 1kg,150,105,S1,2,24,12

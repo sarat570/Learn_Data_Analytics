@@ -1,0 +1,13 @@
+EmployeeID,StoreID,Role,HourlyRate,MaxWeeklyHours
+E11,1,Associate,185,40
+E12,1,Associate,190,40
+E13,1,Associate,195,40
+E14,1,Associate,200,40
+E21,2,Associate,185,40
+E22,2,Associate,190,40
+E23,2,Associate,195,40
+E24,2,Associate,200,40
+E31,3,Associate,185,40
+E32,3,Associate,190,40
+E33,3,Associate,195,40
+E34,3,Associate,200,40

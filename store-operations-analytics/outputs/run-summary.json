@@ -1,0 +1,14 @@
+{
+  "origin": "2026-01-01",
+  "data": "synthetic",
+  "forecast_rows": 63,
+  "backtest_rows": 252,
+  "WAPE": 0.06621551151986346,
+  "BaselineWAPE": 0.0788612875699251,
+  "MAE": 11.08531746031746,
+  "RMSE": 13.25518392153239,
+  "unfilled_hours": 5.4,
+  "timecards_blocked": 11,
+  "pay_rows": 61,
+  "illustrative_gross_pay": 93840.0
+}

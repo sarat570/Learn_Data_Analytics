@@ -1,0 +1,7 @@
+{
+  "name": "Sarat Analytics",
+  "dataColors": ["#147D92", "#E9A23B", "#6374AE", "#D45D6A", "#41A68D", "#8D73B2"],
+  "background": "#F6F8FC",
+  "foreground": "#17243D",
+  "tableAccent": "#147D92"
+}
