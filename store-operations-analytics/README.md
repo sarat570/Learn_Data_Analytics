@@ -4,6 +4,26 @@ An implementation of Sarat Akella's six-module store operations plan, designed a
 
 **Progress:** [implementation checklist](https://github.com/sarat570/Learn_Data_Analytics/issues/1). **Next task:** run the demo locally, then build the Volume and Purchasing report using [the Power BI guide](powerbi/BUILD.md).
 
+**Open the [connected operations UI](https://sarat570.github.io/Learn_Data_Analytics/store-operations-analytics/ui/)** for module dependencies, searchable outputs, a browser-side planning simulator, and a personal feature checklist. The [learning tracker](https://sarat570.github.io/Learn_Data_Analytics/) remains at the repository root.
+
+## Connected UI
+
+The buildless UI under `ui/` runs on GitHub Pages. It reads `ui/data.js`, a published snapshot generated from the pipeline's outputs and input contracts. All six modules share store keys; volume and purchasing share product keys; shifts, timecards and pay share employee/date keys. Module pages link upstream and downstream, the data explorer, Python source and feature tracker.
+
+The simulator recomputes seven-day planning in the browser using `ui/core.mjs`. Demand uplift drives labor and purchasing; labor drives draft shifts; the draft is revalidated against fixed independent demo punches; only eligible timecards enter illustrative pay. Historical holdout scores are never rewritten by a planning scenario. Restoring the snapshot discards the temporary scenario. Simulations do not approve shifts, place orders, submit pay or change cloud data.
+
+Feature status and notes save in browser localStorage, with JSON export/import for backup. They do not sync with GitHub or across devices automatically. The GitHub issue remains the shared manual checklist. Feature-status changes are self-reported progress, not evidence that functionality was implemented.
+
+Refresh and check the UI after pipeline changes:
+
+```sh
+python3 pipeline.py --demo
+python3 build_ui.py
+node --test ui/core.test.mjs
+```
+
+Commit the refreshed `ui/data.js` with the source changes. GitHub Pages serves the UI from the same `main` branch as the rest of this project. JavaScript syntax and six browser-model tests were checked before publication; visual browser QA was unavailable in the build environment.
+
 ## What works now
 
 | Module | Implemented behavior | Current boundary |

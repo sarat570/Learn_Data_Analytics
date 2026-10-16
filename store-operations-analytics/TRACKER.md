@@ -2,6 +2,8 @@
 
 Use the [GitHub checklist issue](https://github.com/sarat570/Learn_Data_Analytics/issues/1) as the editable source of progress.
 
+Open the [connected UI](https://sarat570.github.io/Learn_Data_Analytics/store-operations-analytics/ui/) to inspect modules, simulate planning changes and keep personal feature statuses/notes. Browser progress is local, with export/import; the GitHub issue is updated manually.
+
 | Stage | Status | Evidence or next action |
 |---|---|---|
 | Local six-module pipeline | Complete | `pipeline.py`, synthetic fixtures and generated outputs |
