@@ -1,64 +1,52 @@
-# StoreOps Secure backend
+# StoreOps Restaurant Pilot
 
-Private hosted login, server-side store permissions, Cloudflare D1 POS storage, sales dashboards and revision-controlled demand/labor plans. This is the real-data companion to the public synthetic StoreOps demo. No sample stores, users or POS records are seeded into production.
+Restaurant operations for organizations with 1–10 outlets: POS demand, versioned preparation, recipe yield, FEFO ingredient stock, waste and owned actions. Secure live app: https://sarat-storeops-secure.wittyrhino513.chatgpt.site
 
 ## First use
 
-1. Open https://sarat-storeops-secure.wittyrhino513.chatgpt.site . Sign in with ChatGPT. The site starts owner-private.
-2. Click Initialize workspace once. The authenticated first owner becomes its Administrator. Initialization is a one-time, atomic database insert; keep the site owner-private until complete.
-3. Create real stores under Store configuration. Default business timezone is Asia/Kolkata. Policies are whole-number values; planning hourly costs are entered in paise.
-4. Select a store. Under POS transactions, download the CSV template or enter one line manually. Template examples are not automatically inserted.
-5. Add application memberships using actual ChatGPT account emails under User access. Separately grant the intended people access through the private Site hosting controls. Membership alone does not change platform sharing and sends no invitation email. No other users have been added by this delivery.
-6. Store members can read/upload only their assigned store; Admin can manage all stores. There is no client-selectable role or demo-account switch in this app.
+1. Sign in with ChatGPT, initialize your organization (or upgrade a legacy workspace).
+2. Add outlets, timezone and business-day cutoff under configuration. These date settings lock after POS imports.
+3. Add real member emails as admin, store manager or kitchen staff. Hosting sharing is a separate gate; memberships send no invitations. The Site remains owner-private.
+4. Add menu SKUs and ingredients using explicit kg, l or each units; create effective-dated recipes with usable yield.
+5. Receive ingredient batches with expiry and actual unit costs. Import POS CSV; reconcile daily source line count and signed INR net against the source export.
+6. Create a reasoned preparation sheet, approve it, then record production. FEFO issues ingredients exactly once. Record portions served against prepared batches; POS imports do not automatically deplete stock.
+7. Log waste, count physical stock, assign actions and close them with evidence.
 
-## Database and transaction contract
+No synthetic records are seeded. The public GitHub Pages demonstration remains separate from authenticated operational data.
 
-D1 is a managed SQLite-compatible operational database. Tables: stores, memberships, pos_lines, store_plans and audit_events. Store/date indexes support daily aggregates. D1 platform limits and retention depend on the hosting plan; do not assume unlimited capacity or free usage. Daily row volume, retention and export/backup policy have not been specified. Monitor growth and benchmark your own workload before expanding. PostgreSQL or an archival pipeline can be evaluated when volume outgrows this design.
+## Data and access
 
-POS CSV columns:
+D1 is the lightweight SQLite-compatible pilot database. Server queries and composite database references enforce tenant/outlet scope. One organization membership per account is supported. Admin configures its organization, store managers operate their assigned outlet, kitchen staff see operational views with financial values omitted server-side. Login uses platform-verified identity; no passwords or OAuth tokens are stored.
 
-```csv
-source,transaction_id,line_id,occurred_at,sku,kind,quantity,net_amount
-POS,EXAMPLE-001,1,2026-10-16T10:30:00+05:30,SKU-001,sale,2,160.00
-```
+POS columns: `source,transaction_id,line_id,occurred_at,sku,kind,quantity,net_amount`. A row is an item line; stable source/transaction/line IDs are required. Amount is INR net, stored as integer paise; quantity has up to three decimals. Positive sale/refund inputs are signed according to kind. Timestamps require seconds and an explicit timezone offset. Business dates respect the outlet timezone and cutoff.
 
-One row is one item line, not an order total. The selected authorized store is assigned by the server, never trusted from the row. Source/transaction/line IDs must be stable. The natural key is (store_id, source, transaction_id, line_id). Exact normalized replays are skipped. Reusing the same key with different content rejects the entire 20-row batch; no replacement or silent overwrite occurs.
+Browser files are limited to 2,000 rows/1 MB, with validation before writes and 20-row atomic batches. Invalid rows are retained in a scoped quarantine; an invalid batch posts no POS lines. Exact duplicate imports are skipped; conflicting keys reject the batch. A multi-batch file is not one transaction: earlier successful batches remain if a later conflict occurs. Keep original exports. Quarantine resolution retains the row and a reason; it does not import a correction automatically.
 
-`occurred_at` must include seconds and Z or an explicit timezone offset. The server derives business_date in the store's configured timezone. Timezone changes are rejected once a store has POS rows; changing historical date attribution requires an explicit migration. Net amount is the authoritative POS net line amount in INR, stored as integer paise. Quantity has up to three decimals and is stored in thousandths. Use positive values for both sale and refund; kind determines the stored sign. No taxes, exchange conversions or customer/card identifiers are collected by this schema.
+## Planning and inventory contract
 
-Browser imports support up to 2,000 lines and 1 MB per file, submitted in batches of 20; API requests are limited to 512 KB. Each batch is atomic, but the entire multi-batch file is not: prior successful batches remain committed after a later failure. Correct the rejected row/key and retry; already-inserted identical lines are skipped. Even duplicate-only import attempts conservatively invalidate the store plan.
+Automatic demand requires 56 consecutive covered business dates; the baseline uses four previous same weekdays. A covered day does not prove source completeness. Open quarantine blocks recommendations. Daily source reconciliation is a manual control, not an automated completeness guarantee. Cold-start preparation uses an explicit manual reason.
 
-The UI previews the latest 200 lines and summarizes the latest 90 business dates within the chosen range. All imported lines remain in the database; those display limits are not a retention policy. Full database export, automated backups, daily completeness checks, retention and archival jobs are not implemented in this first version. Keep your source POS exports.
+Recipes use portions × net ingredient quantity ÷ usable yield, with fixed-point quantities. Stock is never summed across unlike units. FEFO excludes expired batches from production and serving. Inventory issues, receipts, waste and counts are transactional ledger entries with balance guards and idempotency keys. Unknown costs remain unknown. Stock counts are distinct from waste.
 
-## Real-data planning
+Preparation carries a recipe/source snapshot and revision. Changed POS, policy or recipe flags review; approved snapshots are not silently rewritten. Published demand snapshots are immutable. Production is limited to the current business date and available unexpired stock; partial production is not implemented. Prepared serving is an explicit entry and must not be duplicated through another inventory integration.
 
-After 28 consecutive covered business dates, a four-week same-weekday baseline produces the next seven days of store-level net unit demand and daily labor requirements. Forecasts follow the latest uploaded date, which may be stale. A date with any uploaded rows is treated as covered; the app cannot certify that every POS batch for that date was uploaded. No missing date is automatically filled with zero. Negative net daily quantities are floored at zero for demand forecasting.
+Stock pages show current balances even when a historical business date is selected. Waste percentages use recorded known ingredient costs/net sales, not verified savings. Missing costs and zero denominators are explicit. Refund-related physical stock returns require manual review.
 
-A Store manager saves an uplift and reason into a shared Draft snapshot, submits it, Admin approves or returns it, and the Store manager publishes. Every action checks the authenticated membership, assigned store, current status and optimistic revision. POS imports and store policy updates bump a source version, reset existing plans to Draft and clear stale snapshots. Submitting requires a fresh saved snapshot. Publishing does not place orders, approve timecards or disburse payroll.
+## Commercial limits
 
-Purchasing, employee shift allocation, timekeeping and payroll have not yet been migrated from the synthetic demo to this backend. The public demo remains available independently. No browser-local demo configurations or fake user assignments are silently imported into the real database.
+This is a pilot implementation aligned to the supplied WFM Commercial Project Plan, not a completed commercial WFM product. See [COMMERCIAL_ALIGNMENT.md](COMMERCIAL_ALIGNMENT.md) for scope and release gates. No 50,000-lines/day capacity benchmark, automated feed, billing, raw-file archive, restore exercise, interval forecasting, roster optimizer, employee timecards or payroll integration is claimed.
 
-## Security boundaries
+Audit events are useful operational history, not an immutable compliance ledger. Some demand-plan audit/snapshot writes follow the plan transition separately; a transactional outbox is required before compliance-sensitive use. PostgreSQL migration, capacity tests, privacy/retention/backup controls and support operations remain release gates.
 
-Hosting dispatch supplies verified identity; the app uses a stable Site-specific user ID and binds allowlisted emails to it on first login. Passwords and OAuth tokens are not stored in this database. All API operations authenticate and authorize server-side; writes also require same-origin JSON requests. Disabling a membership blocks its next request. Application roles and platform sharing are separate gates.
+## Validate and deploy
 
-The first-account bootstrap relies on the Site being owner-private. Do not share or make it public before initialization. The deployed Worker should remain behind the platform identity boundary; do not expose the same build on an unprotected direct endpoint that accepts arbitrary identity headers.
-
-Audit rows are server-generated but are not a separately immutable compliance ledger. POS import/configuration writes and their audit rows share a batch. Plan status updates use a conditional revision write followed by a separate audit insert; the plan change may succeed if the later audit write fails. This limitation requires an outbox/transactional audit design before compliance-sensitive use.
-
-## Reproduce and validate
-
-Use the committed pnpm lockfile. The Sites starter handles its build and deployment configuration. No API credentials are included in source.
+Use the committed pnpm lockfile and Sites build workflow.
 
 ```sh
 node --test tests/*.test.mjs
 node node_modules/typescript/bin/tsc --noEmit
 ```
 
-Eleven tests include real SQLite-backed API tests using the generated migration, plus normalization, CSV, timezone and forecast tests. They cover rejected unauthenticated/cross-store requests, one-time bootstrap, disabled accounts, idempotency, atomic conflict rollback, approval roles, stale plans and POS invalidation. Hosted authentication interaction and browser layout require a signed-in user check; they have not been simulated as production sign-in.
+The tests run actual route handlers against SQLite with all schema migrations and mocked verified identity. They cover access boundaries, POS atomicity/quarantine, planning revisions, immutable publication, recipe yield, FEFO stock flows, retry safety, expired stock and kitchen financial redaction. Production login interaction and responsive browser layout still require a signed-in manual check.
 
-Schema lives in db/schema.ts. Generate new schema-only migrations with the starter's db:generate command; do not edit an applied migration. Database rows must never be committed to GitHub. .openai/hosting.json contains only public binding/identity metadata. Sites publishing applies migrations before deploying the Worker.
-
-References:
-- https://developers.cloudflare.com/d1/platform/limits/
-- https://developers.cloudflare.com/d1/worker-api/d1-database/
+Schema: `db/schema.ts`; migrations: `drizzle/`. Never edit an applied migration or commit customer records. Native publishing applies schema migrations before deploying the Worker.
