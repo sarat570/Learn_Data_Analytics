@@ -32,6 +32,14 @@ node --test ui/core.test.mjs
 
 Commit the refreshed `ui/data.js` with the source changes. GitHub Pages serves the UI from the same `main` branch as the rest of this project. JavaScript syntax and six browser-model tests were checked before publication; visual browser QA was unavailable in the build environment.
 
+## Secure login and POS backend
+
+[Open StoreOps Secure](https://sarat-storeops-secure.wittyrhino513.chatgpt.site) to sign in with ChatGPT, initialize the private workspace, create stores, assign application memberships and store daily POS lines in Cloudflare D1. [Backend source and setup](backend/README.md).
+
+The secure app has server-enforced store permissions, exact integer-paise money storage, duplicate-safe POS imports, business-date dashboards and revision-controlled real-data demand/labor plans. The public UI above remains a synthetic portfolio demo; it does not read the private database. Inventory, employee rosters, timekeeping and pay have not yet been migrated to the secure real-data backend.
+
+First access is owner-private. Initialize the Administrator account before sharing the Site. Store users require both platform Site access and an application membership; no other users have been added automatically.
+
 ## What works now
 
 | Module | Implemented behavior | Current boundary |

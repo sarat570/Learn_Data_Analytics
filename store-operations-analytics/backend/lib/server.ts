@@ -1,0 +1,10 @@
+import {env} from 'cloudflare:workers';
+import {getChatGPTUser} from '../app/chatgpt-auth';
+export function database(){if(!env.DB)throw Error('Database binding is unavailable');return env.DB;}
+export async function identity(){const u=await getChatGPTUser();if(!u)throw Object.assign(Error('Sign in required'),{status:401});return u;}
+export async function member(){const u=await identity();const db=database();let m=await db.prepare('SELECT * FROM memberships WHERE user_id = ? OR email = ? LIMIT 1').bind(u.userId,u.email.toLowerCase()).first<any>();if(!m||!m.active)throw Object.assign(Error('Your account has no active store assignment. Contact the workspace administrator.'),{status:403});if(m.user_id&&m.user_id!==u.userId)throw Object.assign(Error('Account identity does not match this membership'),{status:403});if(!m.user_id){await db.prepare('UPDATE memberships SET user_id = ? WHERE id = ? AND user_id IS NULL').bind(u.userId,m.id).run();m=await db.prepare('SELECT * FROM memberships WHERE id = ? AND user_id = ?').bind(m.id,u.userId).first<any>();if(!m)throw Object.assign(Error('Identity binding conflict'),{status:403});}return {...m,user:u};}
+export function admin(m:any){if(m.role!=='admin')throw Object.assign(Error('Admin role required'),{status:403});}
+export function json(value:unknown,status=200){return Response.json(value,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});}
+export function auditStatement(actor:string,action:string,store:string|null,detail:string){return database().prepare('INSERT INTO audit_events (id,actor_id,action,store_id,detail,created_at) VALUES (?,?,?,?,?,?)').bind(crypto.randomUUID(),actor,action,store,detail,new Date().toISOString());}
+export function short(value:unknown,label:string,max=100){const s=String(value??'').trim();if(!s||s.length>max)throw Error(label+' is required (maximum '+max+' characters)');return s;}
+export function bounded(value:unknown,min:number,max:number,label:string){const n=Number(value);if(!Number.isSafeInteger(n)||n<min||n>max)throw Error(label+' must be a whole number between '+min+' and '+max);return n;}

@@ -28,3 +28,7 @@ python3 -m unittest -v
 ```
 
 Then import `outputs/` CSVs into Power BI Desktop. Check off the local-run task in the issue once both commands succeed on your machine. The tracker is manual; completing work does not automatically update its checkboxes.
+
+## Secure backend milestone
+
+Hosted sign-in, application memberships, store-level API authorization, D1 POS storage, duplicate-safe imports, sales dashboards and real-data demand/labor plans are implemented in [backend/](backend/README.md). Open the [secure app](https://sarat-storeops-secure.wittyrhino513.chatgpt.site). First owner initialization is pending your sign-in. Migrating purchasing, rosters, timekeeping and pay remains separate work.
